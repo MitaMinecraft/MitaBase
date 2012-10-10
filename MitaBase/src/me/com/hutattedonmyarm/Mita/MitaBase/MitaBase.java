@@ -26,6 +26,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -34,18 +35,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 import net.milkbowl.vault.permission.*;
 
 public class MitaBase extends JavaPlugin implements Listener {
-	Logger logger = Bukkit.getServer().getLogger();
+	private Logger logger = Bukkit.getServer().getLogger();
 	
-	Permission permission;
+	private Permission permission;
 	
-	String pluginPrefix = "[MitaBase] ";
-	String databaseName = "MitaBaseDB.db";
+	private String pluginPrefix = "[MitaBase] ";
+	private String databaseName = "MitaBaseDB.db";
 	
-	ConsoleCommandSender console;
+	private ConsoleCommandSender console;
 	
-	SQLite sqlite = new SQLite(logger, "[MitaBase]", databaseName, "plugins/MitaBase/");
+	private SQLite sqlite = new SQLite(logger, "[MitaBase]", databaseName, "plugins/MitaBase/");
 	
-	boolean cmdlogger = true;
+	private boolean cmdlogger = true;
 
 	private void setupDatabase() {		 
 		if (!sqlite.tableExists("users")) {
@@ -79,7 +80,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		console.sendMessage(pluginPrefix + "Setting up...");
 		setupDatabase();
 	    setupPermissions();
-	    getConfig().getBoolean("command_logger");
+	    cmdlogger = getConfig().getBoolean("command_logger");
 	    console.sendMessage(pluginPrefix + "Scanning for worlds...");
 	    List<World> worlds = Bukkit.getServer().getWorlds();
 	    for(int i = 0; i < worlds.size(); i++) {
@@ -312,7 +313,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		sqlite.close();
 	}
 	@EventHandler
-	public void PlayerJoin(PlayerJoinEvent evt) {
+	public void playerJoin(PlayerJoinEvent evt) {
 		Player p = evt.getPlayer();
 		ResultSet rs = sqlite.readQuery("SELECT userid, banned, reason, until FROM users WHERE username = '" + p.getName() + "'");
 		try {
@@ -353,8 +354,14 @@ public class MitaBase extends JavaPlugin implements Listener {
 		}
 	}
 	@EventHandler
-	public void PlayerLogout(PlayerQuitEvent evt){
+	public void playerLogout(PlayerQuitEvent evt){
 		sqlite.modifyQuery("UPDATE users SET afk=0 WHERE username = '" + evt.getPlayer().getName() + "'");
+	}
+	@EventHandler
+	public void playerCommand(PlayerCommandPreprocessEvent evt) {
+		if(cmdlogger) {
+			console.sendMessage(ChatColor.GRAY + "Player " + evt.getPlayer().getName() + " entered command: /" + evt.getMessage());
+		}
 	}
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		String argString = " ";
