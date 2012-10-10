@@ -22,6 +22,10 @@ commands:
     usage: /give [player] <item> [amount]
     aliases: [i, item]
     permission: MitaBase.give
+  heal:
+    description: Heals the player
+    usage: /heal [player]
+    permission: MitaBase.heal
   home:
     description: Teleports the player to their homepoint
     usage: /home [homename]
@@ -79,6 +83,7 @@ permissions:
             MitaBase.setspawn: true
             MitaBase.createwarp: true
             MitaBase.give: true
+            MitaBase.heal: true
     MitaBase.mod.*:
         description: Gives access to all mod-commands from MitaBase
         children:

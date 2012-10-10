@@ -364,12 +364,13 @@ public class MitaBase extends JavaPlugin implements Listener {
 		}
 	}
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		String argString = " ";
-		for(int i = 0; i < args.length; i++) {
-			argString += args[i] + " ";
-		}
-		console.sendMessage(pluginPrefix + sender.getName() + " wrote command: /" + cmd.getName() + argString);
-		
+		if(!cmdlogger) {
+			String argString = " ";
+			for(int i = 0; i < args.length; i++) {
+				argString += args[i] + " ";
+			}
+			console.sendMessage(pluginPrefix + sender.getName() + " wrote command: /" + cmd.getName() + argString);
+		}		
 		Player p = null;
 		if(sender instanceof Player) {
 			p = (Player) sender;
@@ -526,6 +527,25 @@ public class MitaBase extends JavaPlugin implements Listener {
 			
 		}else if(cmd.getName().equalsIgnoreCase("give")) {
 			give(sender, args, cmd);
+		}else if(cmd.getName().equalsIgnoreCase("heal")) {
+			if(args.length >= 1) {
+				if(p == null || p.hasPermission("MitaBase.heal")) {
+					Player p2 = Bukkit.getPlayer(args[0]);
+					if(p2 != null) {
+						p2.setHealth(p2.getMaxHealth());
+						p2.setFoodLevel(20); //This is the maximum...
+					} else {
+						sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					}
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else {
+				if(p != null && p.hasPermission("MitaBase.heal")) {
+					p.setHealth(p.getMaxHealth());
+					p.setFoodLevel(20); //This is the maximum...
+				}
+			}
 		}else if(cmd.getName().equalsIgnoreCase("home")) {
 			String hname = "";
 			if(args.length > 0) hname = args[0];
