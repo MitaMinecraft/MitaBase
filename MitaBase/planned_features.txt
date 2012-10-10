@@ -1,0 +1,4 @@
+mob-schaden ein/aus für jede welt, wetter, zeit, heal, feed, vanish, tpa, jail, msg, invsee, pvp, nick, mute, commandlogger, delhome, delwarp, log no permissions to file & broadcast to admins, get gamemode, list everyone with GameMode gm
+
+done:
+home, gamemode, spawn, afk, ban, tp, warp, kick, give

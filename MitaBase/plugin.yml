@@ -1,0 +1,104 @@
+name: MitaBase
+main: me.com.hutattedonmyarm.Mita.MitaBase.MitaBase
+version: 1.0
+author: hutattedonmyarm
+depend: [Vault]
+commands:
+  afk:
+    description: Marks you as afk
+    usage: /afk
+    permission: MitaBase.afk
+  ban:
+    description: Bans a player
+    usage: /ban <player> [time in seconds] [reason]
+    permission: MitaBase.ban
+  gamemode:
+    description: Changes the gamemode of the player if any given
+    usage: /gm [player] <gamemode>
+    aliases: gm
+    permission: MitaBase.gm.self
+  give:
+    description: Gives the specified item (64 if no amount is set) to the given player (or yourself if none given)
+    usage: /give [player] <item> [amount]
+    aliases: [i, item]
+    permission: MitaBase.give
+  home:
+    description: Teleports the player to their homepoint
+    usage: /home [homename]
+    permission: MitaBase.home
+  kick:
+    description: Kicks a player
+    usage: /kick <player> [reason]
+    permission: MitaBase.kick
+  sethome:
+    description: Sets the homepoint of the player at the players location
+    usage: /sethome [homename]
+    permission: MitaBase.sethome
+  mitabase:
+    aliases: mb 
+  setspawn:
+    description: Sets the spawn of the server at the players location
+    usage: /setspawn
+    permission: MitaBase.setspawn
+  setwarp:
+    description: Sets a warp with the given name at the players location 
+    usage: /setwarp <name>
+    permission: MitaBase.createwarp
+  setwspawn:
+    description: Sets the spawn of the current world at the players location
+    usage: /setwspawn
+    permission: MitaBase.setwspawn
+  spawn:
+    description: Teleports the player to the spawn of the server
+    usage: /spawn
+    permission: MitaBase.spawn
+  tp:
+    description: Teleports you/player1 to player2
+    usage: /tp [player1] <player2>
+    permission: MitaBase.tp
+  warp:
+    description: Warps a player to warp [name] or lists all warps if no name is provided
+    usage: /warp [name]
+    permission: MitaBase.warp
+  wspawn: 
+    description: Teleports the player to the spawn of the current/given world
+    usage: /wspawn [world]
+    permission: MitaBase.wspawn
+  
+permissions:
+    MitaBase.*:
+        description: Gives access to all commands from MitaBase
+        children:
+            MitaBase.admin.*: true
+            MitaBase.unlimitedHomes: true
+            MitaBase.banprotected: true
+    MitaBase.admin.*:
+        description: Gives access to all admin-commands from MitaBase
+        children:
+            MitaBase.mod.*: true
+            MitaBase.setspawn: true
+            MitaBase.createwarp: true
+            MitaBase.give: true
+    MitaBase.mod.*:
+        description: Gives access to all mod-commands from MitaBase
+        children:
+            MitaBase.kick: true
+            MitaBase.user.*: true
+            MitaBase.reload: true
+            MitaBase.setwspawn: true
+            MitaBase.ban: true
+            MitaBase.banprotect: true
+            MitaBase.tp.self: true
+            MitaBase.tp.others: true
+            MitaBase.gm.self: true
+            MitaBase.gm.others: true
+    MitaBase.user.*:
+        description: Gives access to all user-commands from MitaBase
+        children:
+            MitaBase.home: true
+            MitaBase.sethome: true
+            MitaBase.spawn: true
+            MitaBase.wspawn: true
+            MitaBase.afk: true
+            MitaBase.warp.*: true
+            MitaBase.listwarp: true 

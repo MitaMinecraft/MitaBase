@@ -1,0 +1,18 @@
+#Spawnpoint for new players and the /spawn command
+spawn:
+  x: 
+  y:
+  z:
+  world:
+ 
+#Default value, can be changed per user
+max_num_of_homes: 3
+
+#Logs every single command (by all plugins) to the console, even if used the wrong way or will be cancelled
+command_logger: true
+
+new_user:
+  #{username} will be replaced with the players name
+  welcome_message: "Welcome {username} to the Server"
+  message_color: "GREEN"
+  username_color: "YELLOW"
