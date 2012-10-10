@@ -109,7 +109,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		for(int i = 0; i < args.length; i++) {
 			argString += args[i];
 		}
-		console.sendMessage(pluginPrefix + sender.getName() + " was denied access to command /" + cmd.getName() + " " + argString);
+		console.sendMessage(pluginPrefix + sender.getName() + " was denied access to command /" + cmd.getLabel() + " " + argString);
 	}
 	private ItemStack parseMaterial(String itemString, int amount) {
 		ItemStack is = null;
