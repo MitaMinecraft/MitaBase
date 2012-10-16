@@ -1,5 +1,4 @@
 package me.com.hutattedonmyarm.Mita.MitaBase;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -737,7 +736,66 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}			
 				}
 			}
-			
+		} else if (cmd.getName().equalsIgnoreCase("weather")){
+			if(args.length == 1) {
+				if (p != null && p.hasPermission("MitaBase.weather")) {
+						World w = p.getWorld();
+						switch (args[0]) {
+							case "sun":
+								w.setStorm(false);
+								w.setThundering(false);
+								p.sendMessage(ChatColor.GREEN + "Weather set to sun in world " + w.getName());
+								break;
+							case "rain":
+								w.setStorm(true);
+								w.setThundering(false);
+								p.sendMessage(ChatColor.GREEN + "Weather set to rain in world " + w.getName());
+								break;
+							case "storm":
+								w.setStorm(true);
+								w.setThundering(true);
+								p.sendMessage(ChatColor.GREEN + "Weather set to storm in world " + w.getName());
+								break;
+							default:
+								p.sendMessage(ChatColor.RED + "Weather needs to be sun, storm or rain");
+						}
+				} else if (p == null) {
+					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else if (args.length == 2) {
+				if(p == null || p.hasPermission("MitaBase.weather")) {
+					World w = Bukkit.getServer().getWorld(args[0]);
+					if(w != null) {
+						switch (args[1]) {
+						case "sun":
+							w.setStorm(false);
+							w.setThundering(false);
+							sender.sendMessage(ChatColor.GREEN + "Weather set to sun in world " + w.getName());
+							break;
+						case "rain":
+							w.setStorm(true);
+							w.setThundering(false);
+							sender.sendMessage(ChatColor.GREEN + "Weather set to rain in world " + w.getName());
+							break;
+						case "storm":
+							w.setStorm(true);
+							w.setThundering(true);
+							sender.sendMessage(ChatColor.GREEN + "Weather set to storm in world " + w.getName());
+							break;
+						default:
+							sender.sendMessage(ChatColor.RED + "Weather needs to be sun, storm or rain");
+						}
+					} else {
+						sender.sendMessage(ChatColor.RED + "World " + args[0] + " not found");
+					}
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else {
+				return false;
+			}
 		} else if (cmd.getName().equalsIgnoreCase("wspawn")){
 			if(p == null) {
 				sender.sendMessage(ChatColor.RED + "Only players can use this command");

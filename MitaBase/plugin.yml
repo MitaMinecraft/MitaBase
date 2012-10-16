@@ -64,6 +64,9 @@ commands:
     description: Warps a player to warp [name] or lists all warps if no name is provided
     usage: /warp [name]
     permission: MitaBase.warp
+  weather:
+    description: Sets the weather
+    usage: /weather [world] <sun|rain|storm>
   wspawn: 
     description: Teleports the player to the spawn of the current/given world
     usage: /wspawn [world]
@@ -97,6 +100,7 @@ permissions:
             MitaBase.tp.others: true
             MitaBase.gm.self: true
             MitaBase.gm.others: true
+            MitaBase.weather: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:
