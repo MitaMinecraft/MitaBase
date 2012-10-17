@@ -39,7 +39,15 @@ commands:
     usage: /sethome [homename]
     permission: MitaBase.sethome
   mitabase:
-    aliases: mb 
+    aliases: mb
+  mute:
+    description: Mutes a player
+    usage: /mute <player>
+    permission: MitaBase.mute
+  unmute:
+    description: Unmutes a player
+    usage: /unmute <player>
+    permission: MitaBase.mute
   setspawn:
     description: Sets the spawn of the server at the players location
     usage: /setspawn
@@ -102,6 +110,7 @@ permissions:
             MitaBase.gm.self: true
             MitaBase.gm.others: true
             MitaBase.weather: true
+            MitaBase.mute: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:

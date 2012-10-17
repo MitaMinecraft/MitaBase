@@ -25,6 +25,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -49,7 +50,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {		 
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -362,6 +363,19 @@ public class MitaBase extends JavaPlugin implements Listener {
 			console.sendMessage(ChatColor.GRAY + "Player " + evt.getPlayer().getName() + " entered command: /" + evt.getMessage());
 		}
 	}
+	@EventHandler
+	public void playerChat(AsyncPlayerChatEvent evt) {
+		ResultSet rs = sqlite.readQuery("SELECT muted FROM users WHERE username = '"+ evt.getPlayer().getName() + "'");
+		try {
+			if(rs.getBoolean("muted")) {
+				evt.setCancelled(true);
+				evt.getPlayer().sendMessage(ChatColor.RED + "You have been muted");
+				console.sendMessage(ChatColor.BLUE + "Player " + evt.getPlayer().getName() + " tried to speak while being muted");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(!cmdlogger) {
 			String argString = " ";
@@ -612,6 +626,21 @@ public class MitaBase extends JavaPlugin implements Listener {
 				onEnable();
 				sender.sendMessage(ChatColor.GREEN + "Reloaded MitaBase");
 			}
+		} else if(cmd.getName().equalsIgnoreCase("mute")) {
+			if(p == null || p.hasPermission("MitaBase.mute")) {
+				if(args.length == 1) {
+					Player p2 = Bukkit.getServer().getPlayer(args[0]);
+					if (p2 == null) {
+						sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					} else {
+						sqlite.modifyQuery("UPDATE users SET muted=1 WHERE username = '" + p2.getName() + "'");
+					}		
+				} else {
+					return false;
+				}
+			} else {
+				noPermission(sender, cmd, args);
+			}	
 		} else if (cmd.getName().equalsIgnoreCase("sethome")){
 			setHome(sender, args, cmd);
 		} else if(cmd.getName().equalsIgnoreCase("setspawn")) {
@@ -754,6 +783,21 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}			
 				}
 			}
+		} else if(cmd.getName().equalsIgnoreCase("unmute")) {
+					if(p == null || p.hasPermission("MitaBase.mute")) {
+						if(args.length == 1) {
+							Player p2 = Bukkit.getServer().getPlayer(args[0]);
+							if (p2 == null) {
+								sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+							} else {
+								sqlite.modifyQuery("UPDATE users SET muted=0 WHERE username = '" + p2.getName() + "'");
+							}		
+						} else {
+							return false;
+						}
+					} else {
+						noPermission(sender, cmd, args);
+					}	
 		} else if (cmd.getName().equalsIgnoreCase("weather")){
 			if(args.length == 1) {
 				if (p != null && p.hasPermission("MitaBase.weather")) {
