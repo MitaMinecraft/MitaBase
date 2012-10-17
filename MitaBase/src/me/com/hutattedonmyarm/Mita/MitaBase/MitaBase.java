@@ -360,7 +360,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 	@EventHandler
 	public void playerCommand(PlayerCommandPreprocessEvent evt) {
 		if(cmdlogger) {
-			console.sendMessage(ChatColor.GRAY + "Player " + evt.getPlayer().getName() + " entered command: /" + evt.getMessage());
+			console.sendMessage(ChatColor.GRAY + "Player " + evt.getPlayer().getName() + " entered command: " + evt.getMessage());
 		}
 	}
 	@EventHandler
@@ -382,7 +382,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			for(int i = 0; i < args.length; i++) {
 				argString += args[i] + " ";
 			}
-			console.sendMessage(pluginPrefix + sender.getName() + " wrote command: /" + cmd.getName() + argString);
+			console.sendMessage(pluginPrefix + sender.getName() + " wrote command: " + cmd.getName() + argString);
 		}		
 		Player p = null;
 		if(sender instanceof Player) {
