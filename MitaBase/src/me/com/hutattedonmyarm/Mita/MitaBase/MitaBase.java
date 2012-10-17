@@ -460,6 +460,24 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else {
 				noPermission(sender, cmd, args);
 			}
+		}else if(cmd.getName().equalsIgnoreCase("feed")) {
+			if(args.length >= 1) {
+				if(p == null || p.hasPermission("MitaBase.feed")) {
+					Player p2 = Bukkit.getPlayer(args[0]);
+					if(p2 != null) {
+						p2.setFoodLevel(20); //This is the maximum...
+					} else {
+						sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					}
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else {
+				if(p != null && p.hasPermission("MitaBase.heal")) {
+					p.setHealth(p.getMaxHealth());
+					p.setFoodLevel(20); //This is the maximum...
+				}
+			}
 		}else if(cmd.getName().equalsIgnoreCase("gamemode")) {
 			if(args.length == 1) {
 				if (p == null) {

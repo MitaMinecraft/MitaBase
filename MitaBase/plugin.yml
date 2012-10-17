@@ -87,6 +87,7 @@ permissions:
             MitaBase.createwarp: true
             MitaBase.give: true
             MitaBase.heal: true
+            MitaBase.feed: true
     MitaBase.mod.*:
         description: Gives access to all mod-commands from MitaBase
         children:
