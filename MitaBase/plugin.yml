@@ -12,6 +12,10 @@ commands:
     description: Bans a player
     usage: /ban <player> [time in seconds] [reason]
     permission: MitaBase.ban
+  feed:
+    description: Feeds the player
+    usage: /feed [player]
+    permission: MitaBase.feed
   gamemode:
     description: Changes the gamemode of the player if any given
     usage: /gm [player] <gamemode>
@@ -64,6 +68,10 @@ commands:
     description: Teleports the player to the spawn of the server
     usage: /spawn
     permission: MitaBase.spawn
+  time:
+    description: Shows, or sets the time
+    usage: /time [<set|add> <ticks>] [world]
+    permission: MitaBase.time
   tp:
     description: Teleports you/player1 to player2
     usage: /tp [player1] <player2>
@@ -96,6 +104,7 @@ permissions:
             MitaBase.give: true
             MitaBase.heal: true
             MitaBase.feed: true
+            MitaBase.setTime: true
     MitaBase.mod.*:
         description: Gives access to all mod-commands from MitaBase
         children:
@@ -120,4 +129,5 @@ permissions:
             MitaBase.wspawn: true
             MitaBase.afk: true
             MitaBase.warp.*: true
-            MitaBase.listwarp: true 
+            MitaBase.listwarp: true
+            MitaBase.time: true

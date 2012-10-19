@@ -108,7 +108,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		sender.sendMessage(ChatColor.RED + "You don't have permission to do that. This incident will be logged!");
 		String argString = "";
 		for(int i = 0; i < args.length; i++) {
-			argString += args[i];
+			argString += args[i] + " ";
 		}
 		console.sendMessage(pluginPrefix + sender.getName() + " was denied access to command /" + cmd.getLabel() + " " + argString);
 	}
@@ -697,6 +697,89 @@ public class MitaBase extends JavaPlugin implements Listener {
 				noPermission(sender, cmd, args);
 			}else {
 				p.teleport(new Location(Bukkit.getServer().getWorld(getConfig().getString("spawn.world")), getConfig().getDouble("spawn.x"), getConfig().getDouble("spawn.y"), getConfig().getDouble("spawn.z")));
+			}
+		
+		} else if(cmd.getName().equalsIgnoreCase("time")) {
+			/*
+			 * 0 Arguments: Print time of current world
+			 * 1 Argument: Print time of given world; Console: YES
+			 * 2 Arguments: Set time of current world
+			 * 3 Arguments: Set time of given world; Console: YES
+			 */
+			if(args.length == 0) {
+				if(p != null && p.hasPermission("MitaBase.time")) {
+					p.sendMessage(ChatColor.BLUE + "Time in world " + p.getWorld().getName() + " is " + p.getWorld().getTime() + " ticks");
+				} else if (p == null) {
+					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					return true;
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else if(args.length == 1) {
+				if(p == null || p.hasPermission("MitaBase.time")) {
+					World w = Bukkit.getServer().getWorld(args[0]);
+					if(w != null) {
+						sender.sendMessage(ChatColor.BLUE + "Time in world " + w.getName() + " is " + w.getTime() + " ticks");
+					} else {
+						sender.sendMessage(ChatColor.RED + "World " + args[0] + " not found");
+					}
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else if(args.length == 2) {
+				if(p != null && p.hasPermission("MitaBase.setTime")) {
+					if(args[0].equalsIgnoreCase("add")) {
+						try {
+							p.getWorld().setTime(p.getWorld().getTime() + Integer.parseInt(args[1]));
+							p.sendMessage(ChatColor.BLUE + "Time in world " + p.getWorld().getName() + " is now " + p.getWorld().getTime() + " ticks");
+						} catch (Exception e) {
+							return false;
+						}
+					} else if (args[0].equalsIgnoreCase("set")) {
+						try {
+							p.getWorld().setTime(Integer.parseInt(args[1]));
+							p.sendMessage(ChatColor.BLUE + "Time in world " + p.getWorld().getName() + " is now " + p.getWorld().getTime() + " ticks");
+						} catch (Exception e) {
+							return false;
+						}
+					} else {
+						return false;
+					}
+				} else if (p == null) {
+					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				} else {
+					noPermission(sender, cmd, args);
+				}
+				
+			} else if(args.length == 3) {
+				if(p == null || p.hasPermission("MitaBase.time")) {
+					World w = Bukkit.getServer().getWorld(args[2]);
+					if(w != null) {
+						if(args[0].equalsIgnoreCase("add")) {
+							try {
+								w.setTime(p.getWorld().getTime() + Integer.parseInt(args[1]));
+								sender.sendMessage(ChatColor.BLUE + "Time in world " + w.getName() + " is now " + w.getTime() + " ticks");
+							} catch (Exception e) {
+								return false;
+							}
+						} else if (args[0].equalsIgnoreCase("set")) {
+							try {
+								w.setTime(Integer.parseInt(args[1]));
+								sender.sendMessage(ChatColor.BLUE + "Time in world " + w.getName() + " is now " + w.getTime() + " ticks");
+							} catch (Exception e) {
+								return false;
+							}
+						} else {
+							return false;
+						}
+					} else {
+						sender.sendMessage(ChatColor.RED + "World " + args[2] + " not found");
+					}
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else {
+				return false;
 			}
 		} else if (cmd.getName().equalsIgnoreCase("tp")){
 			if(args.length < 1) {
