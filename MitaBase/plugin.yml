@@ -12,6 +12,11 @@ commands:
     description: Bans a player
     usage: /ban <player> [time in seconds] [reason]
     permission: MitaBase.ban
+  enderchest:
+    description: Lets you peak in other players' enderchests
+    usage: /<command> <player>
+    permission: MitaBase.enderchest.see
+    aliases: echest
   feed:
     description: Feeds the player
     usage: /feed [player]
@@ -34,6 +39,10 @@ commands:
     description: Teleports the player to their homepoint
     usage: /home [homename]
     permission: MitaBase.home
+  invsee:
+    description: Lets you peak in other players' inventories
+    usage: /invsee <player>
+    permission: MitaBase.invsee.see
   kick:
     description: Kicks a player
     usage: /kick <player> [reason]
@@ -120,6 +129,10 @@ permissions:
             MitaBase.gm.others: true
             MitaBase.weather: true
             MitaBase.mute: true
+            MitaBase.watchPerms: true
+            MitaBase.invsee.modify: true
+            MitaBase.invsee.see: true
+            MitaBase.enderchest.see: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:

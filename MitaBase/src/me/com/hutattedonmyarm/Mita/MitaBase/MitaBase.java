@@ -111,6 +111,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			argString += args[i] + " ";
 		}
 		console.sendMessage(pluginPrefix + sender.getName() + " was denied access to command /" + cmd.getLabel() + " " + argString);
+		Bukkit.getServer().broadcast(sender.getName() + " was denied access to command /" + cmd.getLabel() + " " + argString, "MitaBase.watchPerms");
 	}
 	private ItemStack parseMaterial(String itemString, int amount) {
 		ItemStack is = null;
@@ -474,7 +475,24 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else {
 				noPermission(sender, cmd, args);
 			}
-		}else if(cmd.getName().equalsIgnoreCase("feed")) {
+		} else if(cmd.getName().equalsIgnoreCase("enderchest")) {
+			if (p != null && p.hasPermission("MitaBase.enderchest.see")) {
+				if (args.length == 1) {
+					Player p2 = Bukkit.getServer().getPlayer(args[0]);
+					if (p2 != null) {
+						p.openInventory(p2.getEnderChest());
+					} else {
+						p.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					}
+				} else {
+					return false;
+				}
+			} else if (p == null) {
+				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		} else if(cmd.getName().equalsIgnoreCase("feed")) {
 			if(args.length >= 1) {
 				if(p == null || p.hasPermission("MitaBase.feed")) {
 					Player p2 = Bukkit.getPlayer(args[0]);
@@ -556,9 +574,9 @@ public class MitaBase extends JavaPlugin implements Listener {
 				return false;
 			}
 			
-		}else if(cmd.getName().equalsIgnoreCase("give")) {
+		} else if(cmd.getName().equalsIgnoreCase("give")) {
 			give(sender, args, cmd);
-		}else if(cmd.getName().equalsIgnoreCase("heal")) {
+		} else if(cmd.getName().equalsIgnoreCase("heal")) {
 			if(args.length >= 1) {
 				if(p == null || p.hasPermission("MitaBase.heal")) {
 					Player p2 = Bukkit.getPlayer(args[0]);
@@ -577,7 +595,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 					p.setFoodLevel(20); //This is the maximum...
 				}
 			}
-		}else if(cmd.getName().equalsIgnoreCase("home")) {
+		} else if(cmd.getName().equalsIgnoreCase("home")) {
 			String hname = "";
 			if(args.length > 0) hname = args[0];
 			ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS numHomesWithThatName FROM users, homes WHERE users.username = '" + p.getName() + "' AND homes.homename = '" + hname + "' AND users.userid = homes.userid");
@@ -596,6 +614,23 @@ public class MitaBase extends JavaPlugin implements Listener {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+			}
+		} else if(cmd.getName().equalsIgnoreCase("invsee")) {
+			if (p != null && p.hasPermission("MitaBase.invsee.see")) {
+				if (args.length == 1) {
+					Player p2 = Bukkit.getServer().getPlayer(args[0]);
+					if (p2 != null) {
+						p.openInventory(p2.getInventory());
+					} else {
+						p.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					}
+				} else {
+					return false;
+				}
+			} else if (p == null) {
+				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+			} else {
+				noPermission(sender, cmd, args);
 			}
 		} else if(cmd.getName().equalsIgnoreCase("kick")) {
 			if(p == null || p.hasPermission("MitaBase.kick")) {
