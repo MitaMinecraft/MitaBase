@@ -95,6 +95,10 @@ commands:
     description: Teleports you/player1 to player2
     usage: /tp [player1] <player2>
     permission: MitaBase.tp
+  vanish:
+    description: Makes you vanish from regular players
+    usage: /vanish
+    permission: MitaBase.vanish
   warp:
     description: Warps a player to warp [name] or lists all warps if no name is provided
     usage: /warp [name]
@@ -145,6 +149,8 @@ permissions:
             MitaBase.invsee.see: true
             MitaBase.enderchest.see: true
             MitaBase.gm.list: true
+            MitaBase.vanish: true
+            MitaBase.seevanished: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:

@@ -943,6 +943,28 @@ public class MitaBase extends JavaPlugin implements Listener {
 					} else {
 						noPermission(sender, cmd, args);
 					}	
+		} else if (cmd.getName().equalsIgnoreCase("vanish")){
+			if (p != null && p.hasPermission("MitaBase.vanish")) {
+				boolean van = false;
+				 for(Player player: getServer().getOnlinePlayers()) {
+				        if(!player.hasPermission("MitaBase.seevanished") && player.canSee(p)) {
+				           player.hidePlayer(p);
+				           van = true;
+				        } else if (!player.hasPermission("MitaBase.seevanished") && !player.canSee(p)) {
+				        	player.showPlayer(p);
+				        }
+				 }
+				 if(van) {
+					 p.sendMessage(ChatColor.GREEN + "You have been vanished");
+				 } else {
+					 p.sendMessage(ChatColor.GREEN + "You have been unvanished");
+				 }
+			} else if (p == null) {
+				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				return true;
+			} else {
+				noPermission(sender, cmd, args);
+			}
 		} else if (cmd.getName().equalsIgnoreCase("weather")){
 			if(args.length == 1) {
 				if (p != null && p.hasPermission("MitaBase.weather")) {
