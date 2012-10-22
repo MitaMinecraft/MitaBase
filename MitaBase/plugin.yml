@@ -47,12 +47,18 @@ commands:
     description: Kicks a player
     usage: /kick <player> [reason]
     permission: MitaBase.kick
-  sethome:
-    description: Sets the homepoint of the player at the players location
-    usage: /sethome [homename]
-    permission: MitaBase.sethome
+  listgamemode
+    description: Lists every player with the given gamemode
+    usage: /<command> <gamemode>
+    permission: MitaBase.gm.list
+    aliases: [lgamemode, lgm]
   mitabase:
     aliases: mb
+  mobdamage:
+    description: Toggles mobdamage in a world
+    usage: /mobdamage [world]
+    permission: MitaBase.toggleMobDamage
+    aliases: mobdmg
   mute:
     description: Mutes a player
     usage: /mute <player>
@@ -61,6 +67,10 @@ commands:
     description: Unmutes a player
     usage: /unmute <player>
     permission: MitaBase.mute
+  sethome:
+    description: Sets the homepoint of the player at the players location
+    usage: /sethome [homename]
+    permission: MitaBase.sethome
   setspawn:
     description: Sets the spawn of the server at the players location
     usage: /setspawn
@@ -114,6 +124,7 @@ permissions:
             MitaBase.heal: true
             MitaBase.feed: true
             MitaBase.setTime: true
+            MitaBase.toggleMobDamage: true
     MitaBase.mod.*:
         description: Gives access to all mod-commands from MitaBase
         children:
@@ -133,6 +144,7 @@ permissions:
             MitaBase.invsee.modify: true
             MitaBase.invsee.see: true
             MitaBase.enderchest.see: true
+            MitaBase.gm.list: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:

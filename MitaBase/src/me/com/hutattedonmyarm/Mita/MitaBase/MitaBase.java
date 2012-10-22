@@ -54,7 +54,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
-			String query = "CREATE TABLE worlds (worldid INTEGER PRIMARY KEY, worldname TEXT)";
+			String query = "CREATE TABLE worlds (worldid INTEGER PRIMARY KEY, worldname TEXT, mobdmg INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		if(!sqlite.tableExists("homes")) {
@@ -655,6 +655,33 @@ public class MitaBase extends JavaPlugin implements Listener {
 				noPermission(sender, cmd, args);
 			}
 			
+		} else if(cmd.getName().equalsIgnoreCase("listgamemode")) {
+			if(p == null || p.hasPermission("MitaBase.gm.list")) {
+				String names = "";
+			    if (args.length < 0) {
+			    	return false;
+			    }
+			    GameMode gm = null;
+			    if (args[0].equalsIgnoreCase("SURVIVAL")) gm = GameMode.SURVIVAL;
+			    if (args[0].equalsIgnoreCase("CREATIVE")) gm = GameMode.CREATIVE;
+			    if (args[0].equalsIgnoreCase("ADVENTURE")) gm = GameMode.ADVENTURE;
+			    if (args[0].equalsIgnoreCase("0")) gm = GameMode.SURVIVAL;
+			    if (args[0].equalsIgnoreCase("1")) gm = GameMode.CREATIVE;
+			    if (args[0].equalsIgnoreCase("2")) gm = GameMode.ADVENTURE;
+				if (gm == null) {
+					sender.sendMessage(ChatColor.RED + args[0] + " is not a valid gamemode");
+					return true;
+				}
+			    for(Player player: getServer().getOnlinePlayers()) {
+			        if(player.getGameMode().equals(gm)) {
+			            names += ChatColor.BLUE + player.getDisplayName() + ChatColor.RESET + ", ";
+			        }     
+			    }
+			    if (names.length() > 2) names = names.substring(0, names.length()-2);
+			    sender.sendMessage(names);
+			} else {
+				noPermission(sender, cmd, args);
+			}
 		} else if(cmd.getName().equalsIgnoreCase("mitabase")) {
 			if((p == null || p.hasPermission("MitaBase.reload")) && args.length > 0 && args[0].equalsIgnoreCase("reload")) {
 				onDisable();
