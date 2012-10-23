@@ -356,6 +356,22 @@ public class MitaBase extends JavaPlugin implements Listener {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		String group = permission.getPrimaryGroup(p);
+		console.sendMessage("group: " + group);
+		ChatColor c = ChatColor.WHITE;
+		try {
+			c = ChatColor.valueOf(getConfig().getString("colors.groups." + group));
+			console.sendMessage("groupcolor: " + getConfig().getString("colors.groups." + group));
+		} catch (Exception e) {
+			
+		}
+		try {
+			c = ChatColor.valueOf(getConfig().getString("colors.players." + p.getName()));
+			console.sendMessage("playercolor: " + getConfig().getString("colors.players." + p.getName()));
+		} catch (Exception e) {
+			
+		}
+		p.setPlayerListName(c + p.getName());
 	}
 	@EventHandler
 	public void playerLogout(PlayerQuitEvent evt){
@@ -1015,13 +1031,13 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}	
 		} else if (cmd.getName().equalsIgnoreCase("vanish")){
 			if (p != null && p.hasPermission("MitaBase.vanish")) {
-				boolean van = false;
+				boolean van = true;
 				 for(Player player: getServer().getOnlinePlayers()) {
 				        if(!player.hasPermission("MitaBase.seevanished") && player.canSee(p)) {
 				           player.hidePlayer(p);
-				           van = true;
 				        } else if (!player.hasPermission("MitaBase.seevanished") && !player.canSee(p)) {
 				        	player.showPlayer(p);
+				        	van = false;
 				        }
 				 }
 				 if(van) {

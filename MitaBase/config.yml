@@ -11,6 +11,15 @@ max_num_of_homes: 3
 #Logs every single command (by all plugins) to the console, even if used the wrong way or will be cancelled
 command_logger: true
 
+#Color of a group/player in the tablist. Player colors overwrite groupcolors
+colors:
+  groups:
+    Player: WHITE
+    Trialmod: GREEN
+    Mod: DARK_GREEN
+    Admin: RED
+  
+  players:
 new_user:
   #{username} will be replaced with the players name
   welcome_message: "Welcome {username} to the Server"

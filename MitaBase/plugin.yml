@@ -151,6 +151,7 @@ permissions:
             MitaBase.gm.list: true
             MitaBase.vanish: true
             MitaBase.seevanished: true
+            MitaBase.toggleBoom: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:
