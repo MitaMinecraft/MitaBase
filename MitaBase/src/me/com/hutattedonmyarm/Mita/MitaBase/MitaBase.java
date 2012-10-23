@@ -22,9 +22,12 @@ import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -377,6 +380,21 @@ public class MitaBase extends JavaPlugin implements Listener {
 			e.printStackTrace();
 		}
 	}
+	@EventHandler(priority = EventPriority.LOWEST)	
+	public void playerOuchByMob(EntityDamageByEntityEvent evt) {
+		World w = evt.getEntity().getWorld();
+		ResultSet rs = sqlite.readQuery("SELECT mobdmg FROM worlds WHERE worldname = '" + w.getName() + "'");
+		boolean dmg = true;
+		try {
+			dmg = rs.getBoolean("mobdmg");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (!dmg && !evt.getDamager().getType().equals(EntityType.PLAYER)) {
+			evt.setCancelled(true);
+			evt.setDamage(0);
+		}
+	}
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(!cmdlogger) {
 			String argString = " ";
@@ -687,6 +705,58 @@ public class MitaBase extends JavaPlugin implements Listener {
 				onDisable();
 				onEnable();
 				sender.sendMessage(ChatColor.GREEN + "Reloaded MitaBase");
+			}
+		} else if(cmd.getName().equalsIgnoreCase("mobdamage")) {
+			if (args.length == 0) {
+				if (p != null && p.hasPermission("MitaBase.toggleMobDamage")) {
+					World w = p.getWorld();
+					ResultSet rs = sqlite.readQuery("SELECT mobdmg FROM worlds WHERE worldname = '" + w.getName() + "'");
+					boolean dmg = true;
+					try {
+						dmg = rs.getBoolean("mobdmg");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					dmg = !dmg;
+					if (dmg) {
+						sqlite.modifyQuery("UPDATE worlds SET mobdmg='1'");
+						sender.sendMessage(ChatColor.GREEN + "Mobdamage in world " + w.getName() + " is now " + ChatColor.RED + "on");
+					} else {
+						sqlite.modifyQuery("UPDATE worlds SET mobdmg='0'");
+						sender.sendMessage(ChatColor.GREEN + "Mobdamage in world " + w.getName() + " is now off");
+					}
+					
+				} else if (p == null) {
+					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else {
+				if (p == null || p.hasPermission("MitaBase.toggleMobDamage")) {
+					World w = getServer().getWorld(args[0]);
+					if (w == null) {
+						sender.sendMessage(ChatColor.RED + "World " + args[0] + " not found");
+						return true;
+					}
+					ResultSet rs = sqlite.readQuery("SELECT mobdmg FROM worlds WHERE worldname = '" + w.getName() + "'");
+					boolean dmg = true;
+					try {
+						dmg = rs.getBoolean("mobdmg");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					dmg = !dmg;
+					if (dmg) {
+						sqlite.modifyQuery("UPDATE worlds SET mobdmg='1'");
+						sender.sendMessage(ChatColor.GREEN + "Mobdamage in world " + w.getName() + " is now " + ChatColor.RED + "on");
+					} else {
+						sqlite.modifyQuery("UPDATE worlds SET mobdmg='0'");
+						sender.sendMessage(ChatColor.GREEN + "Mobdamage in world " + w.getName() + " is now off");
+					}
+					
+				} else {
+					noPermission(sender, cmd, args);
+				}
 			}
 		} else if(cmd.getName().equalsIgnoreCase("mute")) {
 			if(p == null || p.hasPermission("MitaBase.mute")) {

@@ -47,7 +47,7 @@ commands:
     description: Kicks a player
     usage: /kick <player> [reason]
     permission: MitaBase.kick
-  listgamemode
+  listgamemode:
     description: Lists every player with the given gamemode
     usage: /<command> <gamemode>
     permission: MitaBase.gm.list
