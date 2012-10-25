@@ -19,6 +19,9 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.Chest;
+import org.bukkit.block.DoubleChest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -27,7 +30,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -66,6 +73,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 		}
 		if(!sqlite.tableExists("warps")) {
 			String query = "CREATE TABLE warps (warpid INTEGER PRIMARY KEY, warpname TEXT, locX REAL, locY REAL, locZ REAL, world TEXT)";
+			sqlite.modifyQuery(query);
+		}
+		if(!sqlite.tableExists("chests")) {
+			String query = "CREATE TABLE chests (chestid INTEGER PRIMARY KEY, locX REAL, locY REAL, locZ REAL, world TEXT, gm INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		
@@ -323,7 +334,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB
 				Bukkit.getServer().dispatchCommand(p, "spawn");
-				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, banned) VALUES ('" + p.getName() + "', 0, 0, 0)");
+				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, banned, muted) VALUES ('" + p.getName() + "', 0, 0, 0, 0)");
 				console.sendMessage(pluginPrefix + ChatColor.GREEN + "New user " + p.getName());
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
@@ -409,6 +420,108 @@ public class MitaBase extends JavaPlugin implements Listener {
 		if (!dmg && !evt.getDamager().getType().equals(EntityType.PLAYER)) {
 			evt.setCancelled(true);
 			evt.setDamage(0);
+		}
+	}
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void blockPlaced(BlockPlaceEvent evt) {
+		Block b = evt.getBlockPlaced();
+		Player player = evt.getPlayer();
+		Location l = b.getLocation();
+		Location lo = b.getLocation();
+		
+		l.setX(lo.getX() + 1);
+		Block p = l.getBlock();
+		l.setX(lo.getX() - 1);
+		Block q = l.getBlock();
+		l.setZ(lo.getZ() + 1);
+		l.setX(l.getX() + 1);
+		Block r = l.getBlock();
+		l.setZ(lo.getZ() - 1);
+		Block s = l.getBlock();
+		GameMode g = null;
+		if(p.getType().equals(Material.CHEST)) {
+			ResultSet rs = sqlite.readQuery("SELECT gm FROM chests WHERE locX = '" + p.getX() + "' AND locY = '" + p.getY() + "' AND locZ = '" + p.getZ() + "' AND world = '" + p.getWorld().getName() + "'");
+			try {
+				g = GameMode.getByValue(rs.getInt("gm"));
+			} catch (Exception e) {
+				
+			}
+		} else if(q.getType().equals(Material.CHEST)) {
+			ResultSet rs = sqlite.readQuery("SELECT gm FROM chests WHERE locX = '" + q.getX() + "' AND locY = '" + q.getY() + "' AND locZ = '" + q.getZ() + "' AND world = '" + q.getWorld().getName() + "'");
+			try {
+				g = GameMode.getByValue(rs.getInt("gm"));
+			} catch (Exception e) {
+				
+			}
+		} else if(r.getType().equals(Material.CHEST)) {
+			ResultSet rs = sqlite.readQuery("SELECT gm FROM chests WHERE locX = '" + r.getX() + "' AND locY = '" + r.getY() + "' AND locZ = '" + r.getZ() + "' AND world = '" + r.getWorld().getName() + "'");
+			try {
+				g = GameMode.getByValue(rs.getInt("gm"));
+			} catch (Exception e) {
+				
+			}
+		} else if(s.getType().equals(Material.CHEST)) {
+			ResultSet rs = sqlite.readQuery("SELECT gm FROM chests WHERE locX = '" + s.getX() + "' AND locY = '" + s.getY() + "' AND locZ = '" + s.getZ() + "' AND world = '" + s.getWorld().getName() + "'");
+			try {
+				g = GameMode.getByValue(rs.getInt("gm"));
+			} catch (Exception e) {
+				
+			}
+		}
+		if (g != null && !g.equals(player.getGameMode())) {
+			evt.setCancelled(true);
+			player.sendMessage(ChatColor.RED + "You've got the wrong gamemode to place a doublechest");
+		} else {
+			sqlite.modifyQuery("INSERT INTO chests (locX, locY, locZ, world, gm) VALUES ('" + b.getX()  + "', '" + b.getY()  + "', '" + b.getZ()  + "', '" + b.getWorld().getName() + "', '" + player.getGameMode().getValue() + "')");
+		}
+	}
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void blockBroke(BlockBreakEvent evt) {
+		Block b = evt.getBlock();
+		//Player player = evt.getPlayer();
+		if(b.getType().equals(Material.CHEST)) {
+			sqlite.modifyQuery("DELETE FROM chests WHERE locX = '" + b.getX()  + "' AND locY = '" + b.getY()  + "' AND locZ =  '" + b.getZ()  + "' AND world = '" + b.getWorld().getName() + "'");	
+		}
+		
+	}
+	@EventHandler
+	public void openInv(InventoryOpenEvent evt) {
+		Player p = (Player) evt.getPlayer();
+		if(evt.getInventory().getType().equals(InventoryType.CHEST)) {
+			if (evt.getInventory().getHolder() instanceof Chest) {
+				Chest c = (Chest) evt.getInventory().getHolder();
+				ResultSet rs = sqlite.readQuery("SELECT gm FROM chests WHERE locX = '" + c.getX() + "' AND locY = '" + c.getY() + "' AND locZ = '" + c.getZ() + "' AND world = '" + c.getWorld().getName() + "'");
+				GameMode g = null;
+				try {
+					g = GameMode.getByValue(rs.getInt("gm"));
+				} catch (Exception e) {
+					
+				}
+				if (!g.equals(p.getGameMode())) {
+					evt.setCancelled(true);
+					p.sendMessage(ChatColor.RED + "This chest has been placed in " + g.toString() + " but you are in " + p.getGameMode().toString());
+				}
+			} else {
+				DoubleChest c = (DoubleChest) evt.getInventory().getHolder();
+				double x = c.getX();
+				double y = c.getY();
+				double z = c.getZ();
+				ResultSet rs = sqlite.readQuery("SELECT gm FROM chests WHERE locX = '" + x + "' AND locY = '" + y + "' AND locZ = '" + z + "' AND world = '" + c.getWorld().getName() + "'");
+				GameMode g = null;
+				try {
+					g = GameMode.getByValue(rs.getInt("gm"));
+				} catch (Exception e) {
+					
+				}
+				if (!g.equals(p.getGameMode())) {
+					evt.setCancelled(true);
+					p.sendMessage(ChatColor.RED + "This chest has been placed in " + g.toString() + " but you are in " + p.getGameMode().toString());
+				}
+			}
+			
+		} else if(evt.getInventory().getType().equals(InventoryType.ENDER_CHEST) && p.getGameMode().equals(GameMode.CREATIVE)) {
+			p.sendMessage(ChatColor.RED + "You can't use enderchests in creative mode");
+			evt.setCancelled(true);
 		}
 	}
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
