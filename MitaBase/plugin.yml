@@ -91,6 +91,11 @@ commands:
     description: Shows, or sets the time
     usage: /time [<set|add> <ticks>] [world]
     permission: MitaBase.time
+  toggleboom:
+    description: Toggles explosions of creepers
+    usage: /<command> <0|1> [world]
+    permission: MitaBase.toggleBoom
+    aliases: [tboom, toggleexplosions, tex]  
   tp:
     description: Teleports you/player1 to player2
     usage: /tp [player1] <player2>

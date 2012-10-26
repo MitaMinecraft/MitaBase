@@ -66,7 +66,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
-			String query = "CREATE TABLE worlds (worldid INTEGER PRIMARY KEY, worldname TEXT, mobdmg INTEGER)";
+			String query = "CREATE TABLE worlds (worldid INTEGER PRIMARY KEY, worldname TEXT, mobdmg INTEGER, boom INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		if(!sqlite.tableExists("homes")) {
@@ -1025,6 +1025,23 @@ public class MitaBase extends JavaPlugin implements Listener {
 				} else {
 					noPermission(sender, cmd, args);
 				}
+			} else {
+				return false;
+			}
+		} else if (cmd.getName().equalsIgnoreCase("toggleboom")){
+			if (args.length == 1) {
+				if(p != null && p.hasPermission("MitaBase.toggleBoom")) {
+					if(!(args[0].equals("0") || args[0].equals("1"))) {
+						return false;
+					}
+					sqlite.modifyQuery("UPDATE worlds SET boom='" + args[0] + "' WHERE worldname = '" + p.getWorld().getName() + "'");
+				} else if (p == null) {
+					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else if (args.length == 2){
+				
 			} else {
 				return false;
 			}
