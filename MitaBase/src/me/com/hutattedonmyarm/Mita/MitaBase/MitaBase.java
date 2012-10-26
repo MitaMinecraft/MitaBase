@@ -20,8 +20,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
-import org.bukkit.block.DoubleChest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -34,8 +32,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -1041,7 +1037,19 @@ public class MitaBase extends JavaPlugin implements Listener {
 					noPermission(sender, cmd, args);
 				}
 			} else if (args.length == 2){
-				
+				if (p == null || p.hasPermission("MitaBase.toggleBoom")) {
+					if(!(args[0].equals("0") || args[0].equals("1"))) {
+						return false;
+					}
+					World w = getServer().getWorld(args[1]);
+					if (w == null) {
+						sender.sendMessage(ChatColor.RED + "World " + args[1] + " not found");
+						return true;
+					}
+					sqlite.modifyQuery("UPDATE worlds SET boom='" + args[0] + "' WHERE worldname = '" + w.getName() + "'");
+				} else {
+					noPermission(sender, cmd, args);
+				}
 			} else {
 				return false;
 			}
