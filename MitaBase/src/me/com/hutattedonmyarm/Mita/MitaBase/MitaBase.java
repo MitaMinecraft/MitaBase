@@ -80,6 +80,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 			String query = "CREATE TABLE chests (chestid INTEGER PRIMARY KEY, locX REAL, locY REAL, locZ REAL, world TEXT, gm INTEGER)";
 			sqlite.modifyQuery(query);
 		}
+		if(!sqlite.tableExists("jails")) {
+			String query = "CREATE TABLE jails (jailid INTEGER PRIMARY KEY, jailname TEXT, locX REAL, locY REAL, locZ REAL, world TEXT)";
+			sqlite.modifyQuery(query);
+		}
 		
 	}
 	private boolean setupPermissions()
@@ -910,6 +914,31 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}	
 		} else if (cmd.getName().equalsIgnoreCase("sethome")){
 			setHome(sender, args, cmd);
+		} else if(cmd.getName().equalsIgnoreCase("setjail")) {
+			if (p == null) {
+				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+			} else if (!p.hasPermission("MitaBase.createjail")) {
+				noPermission(sender, cmd, args);
+			} else if (args.length < 1) {
+				return false;
+			} else {
+				String jname = args[0];
+				ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS numJailsWithThatName FROM jails WHERE jailname = '" + jname + "'");
+				int njwn = 0;
+				try {
+					njwn = rs.getInt("numJailsWithThatName");
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if(njwn > 0) {
+					sqlite.modifyQuery("UPDATE jails SET locX='"+p.getLocation().getX()+"', locY='"+p.getLocation().getY()+"', locZ='"+p.getLocation().getZ()+"' WHERE jailname='"+jname+"'");
+					p.sendMessage(ChatColor.GREEN + "Jail " + jname + " has been succesfully updated");
+				} else {
+					sqlite.modifyQuery("INSERT INTO jails (jailname, locX, locY, locZ, world) VALUES ('" + jname + "', '" + p.getLocation().getX() + "', '" + p.getLocation().getY() + "', '" + p.getLocation().getZ() + "', '" + p.getWorld().getName() + "')");
+					p.sendMessage(ChatColor.GREEN + "Jail " + jname + " has been succesfully created");
+				}
+			}
+			
 		} else if(cmd.getName().equalsIgnoreCase("setspawn")) {
 			if(p == null) {
 				sender.sendMessage(ChatColor.RED + "Only players can use this command");

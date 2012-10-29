@@ -71,6 +71,10 @@ commands:
     description: Sets the homepoint of the player at the players location
     usage: /sethome [homename]
     permission: MitaBase.sethome
+  setjail:
+    description: Sets a warp with the given name at the players location 
+    usage: /setjail <name>
+    permission: MitaBase.createjail
   setspawn:
     description: Sets the spawn of the server at the players location
     usage: /setspawn
@@ -129,6 +133,7 @@ permissions:
             MitaBase.mod.*: true
             MitaBase.setspawn: true
             MitaBase.createwarp: true
+            MitaBase.createjail: true
             MitaBase.give: true
             MitaBase.heal: true
             MitaBase.feed: true
