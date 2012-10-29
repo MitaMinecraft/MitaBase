@@ -32,6 +32,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -40,21 +41,23 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.permission.*;
 
 public class MitaBase extends JavaPlugin implements Listener {
 	private Logger logger = Bukkit.getServer().getLogger();
-	
-	private Permission permission;
 	
 	private String pluginPrefix = "[MitaBase] ";
 	private String databaseName = "MitaBaseDB.db";
 	
 	private ConsoleCommandSender console;
 	
-	private SQLite sqlite = new SQLite(logger, "[MitaBase]", databaseName, "plugins/MitaBase/");
-	
 	private boolean cmdlogger = true;
+	
+	private Permission permission;
+	private SQLite sqlite = new SQLite(logger, "[MitaBase]", databaseName, "plugins/MitaBase/");
+	private Chat chat = null;
 
 	private void setupDatabase() {		 
 		if (!sqlite.tableExists("users")) {
@@ -87,11 +90,17 @@ public class MitaBase extends JavaPlugin implements Listener {
         }
         return (permission != null);
     }
+	private boolean setupChat() {
+        RegisteredServiceProvider<Chat> rsp = getServer().getServicesManager().getRegistration(Chat.class);
+        chat = rsp.getProvider();
+        return chat != null;
+    }
 	private void loadStuff() {
 		console.sendMessage(pluginPrefix + ChatColor.RESET + "Enabling MitaBase...");
 		console.sendMessage(pluginPrefix + "Setting up...");
 		setupDatabase();
 	    setupPermissions();
+	    setupChat();
 	    cmdlogger = getConfig().getBoolean("command_logger");
 	    console.sendMessage(pluginPrefix + "Scanning for worlds...");
 	    List<World> worlds = Bukkit.getServer().getWorlds();
@@ -99,7 +108,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 	    	try {
 	    		ResultSet rs = sqlite.readQuery("SELECT worldid FROM worlds WHERE worldname = '" + worlds.get(i).getName() + "'");
 				if(rs != null && !rs.next()) { //World doesn't exist in DB
-					sqlite.modifyQuery("INSERT INTO worlds (worldname) VALUES ('" + worlds.get(i).getName() + "')");
+					sqlite.modifyQuery("INSERT INTO worlds (worldname, mobdmg, boom) VALUES ('" + worlds.get(i).getName() + "', '1', '1')");
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -369,16 +378,18 @@ public class MitaBase extends JavaPlugin implements Listener {
 		console.sendMessage("group: " + group);
 		ChatColor c = ChatColor.WHITE;
 		try {
+			c = ChatColor.valueOf(chat.getPlayerPrefix(p));
+		} catch (Exception e) {
+		}	
+		try {
 			c = ChatColor.valueOf(getConfig().getString("colors.groups." + group));
 			console.sendMessage("groupcolor: " + getConfig().getString("colors.groups." + group));
 		} catch (Exception e) {
-			
 		}
 		try {
 			c = ChatColor.valueOf(getConfig().getString("colors.players." + p.getName()));
 			console.sendMessage("playercolor: " + getConfig().getString("colors.players." + p.getName()));
 		} catch (Exception e) {
-			
 		}
 		p.setPlayerListName(c + p.getName());
 	}
@@ -504,6 +515,19 @@ public class MitaBase extends JavaPlugin implements Listener {
 		} else if (evt.getAction().equals(Action.RIGHT_CLICK_BLOCK) && evt.getClickedBlock().getType().equals(Material.ENDER_CHEST) && evt.getPlayer().getGameMode().equals(GameMode.CREATIVE)) {
 			p.sendMessage(ChatColor.RED + "You can't use enderchests in creative mode");
 			evt.setCancelled(true);
+		}
+	}
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void creeperBoom(EntityExplodeEvent evt) {
+		if(evt.getEntityType().equals(EntityType.CREEPER)) {
+			ResultSet rs = sqlite.readQuery("SELECT boom FROM worlds WHERE worldname = '" + evt.getLocation().getWorld().getName() + "'");
+			boolean boom = true;
+			try {
+				boom = rs.getBoolean("boom");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			if(!boom) evt.setCancelled(true);
 		}
 	}
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {

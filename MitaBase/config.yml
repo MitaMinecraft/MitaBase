@@ -11,7 +11,7 @@ max_num_of_homes: 3
 #Logs every single command (by all plugins) to the console, even if used the wrong way or will be cancelled
 command_logger: true
 
-#Color of a group/player in the tablist. Player colors overwrite groupcolors
+#Color of a group/player in the tablist. First, the color from a chatplugin is used. If the groups color is set here it overwrites that and player-colors overwrite group-colors. If nothing is set white is used
 colors:
   groups:
     Player: WHITE
