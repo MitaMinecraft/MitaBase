@@ -110,6 +110,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 	    setupChat();
 	    cmdlogger = getConfig().getBoolean("command_logger");
 	    console.sendMessage(pluginPrefix + "Scanning for worlds...");
+	    
+	    //Getting all worlds and add them to the DB if they don't exist 
 	    List<World> worlds = Bukkit.getServer().getWorlds();
 	    for(int i = 0; i < worlds.size(); i++) {
 	    	try {
@@ -122,6 +124,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}
 	    }
 	    console.sendMessage(pluginPrefix + ChatColor.GREEN + "Found " + worlds.size() + " worlds");
+	    
+	    //Set the spawnpoint in the config to the spawnof the mainworld if it's not set
 	    if(getConfig().getString("spawn.world") == null) {
 	    	getConfig().options().copyDefaults(true);
 	    	getConfig().addDefault("spawn.world", Bukkit.getServer().getWorlds().get(0).getName());
@@ -145,7 +149,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		ItemStack is = null;
 		String matString = "";
 		String dmgString = "";
-		if(itemString.contains(":") && itemString.length() != itemString.indexOf(":")+1) { //String contains ':', but it's not the last character
+		if(itemString.contains(":") && itemString.length() != itemString.indexOf(":")+1) { //String contains ':', but it's not the last character. So we're dealing with damage values
 			matString = itemString.split(":")[0];
 			dmgString = itemString.split(":")[1];
 		} else {
@@ -153,7 +157,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		}
 		Material m = null;
 		try {
-			m = Material.getMaterial(Integer.parseInt(matString));
+			m = Material.getMaterial(Integer.parseInt(matString)); //is it the ID pr the name? We just try parsing it as ID, if it fails it seems to be a name
 		} catch (Exception e) {
 			m = Material.getMaterial(matString.toUpperCase());
 		}
@@ -177,11 +181,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 		Player p = null;
 		if(sender instanceof Player) {
 			p = (Player) sender;
-		} else {
-			sender.sendMessage(sender.getName() + " " + sender.toString());
 		}
 		if(p == null || p.hasPermission("MitaBase.give")) {
-			/* /give [player] <item> [amount]
+			/* Command possibilities:
+			 * /give [player] <item> [amount]
 			 * 1) No arguments
 			 * 2) 1 argument: item
 			 * 3) 2 arguments: player & item (Console: Yes)
@@ -201,7 +204,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}
 					p.getInventory().addItem(is);
 				} else {
-					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					playerOnly(sender);
 				}
 			} else if (args.length == 2) { //3) and 4)
 				Player p2 = Bukkit.getPlayer(args[0]);
@@ -241,7 +244,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 								p.sendMessage(ChatColor.RED + "Invalid amount " + args[1]);
 							}
 						} else {
-							sender.sendMessage(ChatColor.RED + "Only players can use this command");
+							playerOnly(sender);
 						}
 					}
 				}
@@ -280,7 +283,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			p = (Player) sender;
 		}
 		if(p == null) {
-			sender.sendMessage(ChatColor.RED + "Only players can use this command");
+			playerOnly(sender);
 		} else if (!p.hasPermission("MitaBase.sethome")){
 			noPermission(sender, cmd, args);
 		} else {
@@ -343,6 +346,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 			p.sendMessage(ChatColor.RED + "You're not allowed to do that while in jail");
 		}
 		return jailed;
+		//We can't cancel the event here since w don't know if it's cancellable or not
+	}
+	private void playerOnly (CommandSender sender) {
+		sender.sendMessage(ChatColor.RED + "Only players can use this command");
 	}
 	public void onEnable(){
 		getServer().getPluginManager().registerEvents(this, this);
@@ -359,7 +366,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		Player p = evt.getPlayer();
 		ResultSet rs = sqlite.readQuery("SELECT userid, banned, reason, until FROM users WHERE username = '" + p.getName() + "'");
 		try {
-			if(rs != null && !rs.next()) { //User doesn't exist in DB
+			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
 				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, banned, muted) VALUES ('" + p.getName() + "', 0, 0, 0, 0)");
 				console.sendMessage(pluginPrefix + ChatColor.GREEN + "New user " + p.getName());
@@ -376,9 +383,9 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}
 				}
 				Bukkit.getServer().broadcastMessage(mc + getConfig().getString("new_user.welcome_message").replace("{username}", uc + p.getName() + mc));
-			} else {
+			} else { //Yay, a user came back! :) Let's see if they're banned...
 				int banned = rs.getInt("banned");
-				if(banned == 1){
+				if(banned == 1){ //Okay, banned... but maybe the ban is already over?
 					Date until = new Date();
 					String u = rs.getString("until");
 					if (!u.equals("Forever")) {
@@ -460,6 +467,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		Location l = b.getLocation();
 		Location lo = b.getLocation();
 		
+		//This is weird, but works... I tested it! But code needs to be improved!
 		l.setX(lo.getX() + 1);
 		Block p = l.getBlock();
 		l.setX(lo.getX() - 1);
@@ -605,7 +613,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 				if(!afk) Bukkit.getServer().broadcastMessage(ChatColor.DARK_AQUA +  p.getName() + " is now afk");
 				if(afk) Bukkit.getServer().broadcastMessage(ChatColor.DARK_AQUA +  p.getName() + " is no longer afk");
 			} else {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 			}
 		}else if(cmd.getName().equalsIgnoreCase("ban")) {
 			if(p == null || p.hasPermission("MitaBase.ban")) {
@@ -689,7 +697,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 					return false;
 				}
 			} else if (p == null) {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 			} else {
 				noPermission(sender, cmd, args);
 			}
@@ -714,7 +722,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		}else if(cmd.getName().equalsIgnoreCase("gamemode")) {
 			if(args.length == 1) {
 				if (p == null) {
-					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					playerOnly(sender);
 				} else if (!p.hasPermission("MitaBase.gm.self")) {
 					noPermission(sender, cmd, args);
 				} else {
@@ -830,7 +838,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 					return false;
 				}
 			} else if (p == null) {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 			} else {
 				noPermission(sender, cmd, args);
 			}
@@ -968,7 +976,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}
 					
 				} else if (p == null) {
-					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					playerOnly(sender);
 				} else {
 					noPermission(sender, cmd, args);
 				}
@@ -1018,7 +1026,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			setHome(sender, args, cmd);
 		} else if(cmd.getName().equalsIgnoreCase("setjail")) {
 			if (p == null) {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 			} else if (!p.hasPermission("MitaBase.createjail")) {
 				noPermission(sender, cmd, args);
 			} else if (args.length < 1) {
@@ -1043,7 +1051,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			
 		} else if(cmd.getName().equalsIgnoreCase("setspawn")) {
 			if(p == null) {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 			} else if (!p.hasPermission("MitaBase.setspawn")){
 				noPermission(sender, cmd, args);
 			} else {
@@ -1056,7 +1064,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}
 		} else if(cmd.getName().equalsIgnoreCase("setwarp")) {
 			if (p == null) {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 			} else if (!p.hasPermission("MitaBase.createwarp")) {
 				noPermission(sender, cmd, args);
 			} else if (args.length < 1) {
@@ -1081,7 +1089,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			
 		} else if(cmd.getName().equalsIgnoreCase("setwspawn")) {
 			if(p == null) {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 			} else if (!p.hasPermission("MitaBase.setwspawn")){
 				noPermission(sender, cmd, args);
 			} else {
@@ -1090,7 +1098,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}
 		} else if(cmd.getName().equalsIgnoreCase("spawn")) {
 			if(p == null) {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 			} else if (!p.hasPermission("MitaBase.spawn")){
 				noPermission(sender, cmd, args);
 			}else {
@@ -1108,7 +1116,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 				if(p != null && p.hasPermission("MitaBase.time")) {
 					p.sendMessage(ChatColor.BLUE + "Time in world " + p.getWorld().getName() + " is " + p.getWorld().getTime() + " ticks");
 				} else if (p == null) {
-					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					playerOnly(sender);
 					return true;
 				} else {
 					noPermission(sender, cmd, args);
@@ -1144,7 +1152,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 						return false;
 					}
 				} else if (p == null) {
-					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					playerOnly(sender);
 				} else {
 					noPermission(sender, cmd, args);
 				}
@@ -1187,7 +1195,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}
 					sqlite.modifyQuery("UPDATE worlds SET boom='" + args[0] + "' WHERE worldname = '" + p.getWorld().getName() + "'");
 				} else if (p == null) {
-					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					playerOnly(sender);
 				} else {
 					noPermission(sender, cmd, args);
 				}
@@ -1216,7 +1224,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else if (args.length == 1) {
 				Player p2 = Bukkit.getServer().getPlayer(args[0]);
 				if(p == null) {
-					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					playerOnly(sender);
 				} else if(!p.hasPermission("MitaBase.tp.self")){
 					noPermission(sender, cmd, args);
 				} else if (p2 == null){
@@ -1262,7 +1270,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 				}
 			} else {
 				if(p == null) {
-					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					playerOnly(sender);
 				} else if(!p.hasPermission("MitaBase.warp."+args[0])) {
 					noPermission(sender, cmd, args);
 				} else {
@@ -1340,7 +1348,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 					 p.sendMessage(ChatColor.GREEN + "You have been unvanished");
 				 }
 			} else if (p == null) {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 				return true;
 			} else {
 				noPermission(sender, cmd, args);
@@ -1369,7 +1377,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 								p.sendMessage(ChatColor.RED + "Weather needs to be sun, storm or rain");
 						}
 				} else if (p == null) {
-					sender.sendMessage(ChatColor.RED + "Only players can use this command");
+					playerOnly(sender);
 				} else {
 					noPermission(sender, cmd, args);
 				}
@@ -1407,7 +1415,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}
 		} else if (cmd.getName().equalsIgnoreCase("wspawn")){
 			if(p == null) {
-				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+				playerOnly(sender);
 			} else if (!p.hasPermission("MitaBase.wspawn")){
 				noPermission(sender, cmd, args);
 			} else if (args.length == 0) {
