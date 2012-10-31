@@ -43,6 +43,10 @@ commands:
     description: Lets you peak in other players' inventories
     usage: /invsee <player>
     permission: MitaBase.invsee.see
+  jail:
+    description: Jails the player <player> into the jail <jailname>
+    usage: /jail <player> <jailname> [seconds]
+    permission: MitaBase.jail
   kick:
     description: Kicks a player
     usage: /kick <player> [reason]
@@ -104,6 +108,10 @@ commands:
     description: Teleports you/player1 to player2
     usage: /tp [player1] <player2>
     permission: MitaBase.tp
+  unjail:
+    description: Jails the player <player> into the jail <jailname>
+    usage: /unjail
+    permission: MitaBase.unjail
   vanish:
     description: Makes you vanish from regular players
     usage: /vanish
@@ -162,6 +170,8 @@ permissions:
             MitaBase.vanish: true
             MitaBase.seevanished: true
             MitaBase.toggleBoom: true
+            MitaBase.jail: true
+            MitaBase.unjail: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:

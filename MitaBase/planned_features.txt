@@ -1,4 +1,8 @@
-tpa, jail, msg, pvp, nick, delhome, delwarp, groupmessages, warnings, 
+version 1:
+tpa, jail, mail, msg, pvp, nick, delhome, delwarp, groupmessages, warnings, witherdamage, endermandamage,  clean up code
+
+version 2: 
+default-values in config, list of commands allowed while being jailed
 
 done:
 home, gamemode, spawn, afk, ban, tp, warp, kick, give, commandlogger, wetter, feed, heal, mute, zeit, invsee, enderchest, list everyone with GameMode gm, vanish,lock chests according to gamemode,mob-schaden ein/aus für jede welt, 
@@ -6,5 +10,10 @@ home, gamemode, spawn, afk, ban, tp, warp, kick, give, commandlogger, wetter, fe
 todo:
 test vanish, test lgm
 
-
-notes:
+forbidden things while jailed:
+- blockbreak (check)
+- blockplace (check)
+- enter boat (check)
+- enter command (check)
+- empty bucket (check)
+- no ender pearl (ProjectileLaunchEvent)

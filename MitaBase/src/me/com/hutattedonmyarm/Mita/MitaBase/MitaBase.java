@@ -33,11 +33,14 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -61,7 +64,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {		 
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER, jailed INTEGER, jaileduntil TEXT)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -328,6 +331,19 @@ public class MitaBase extends JavaPlugin implements Listener {
 			
 		}
 	}
+	private boolean preventPlayerFromBreakingOut(Player p) {
+		ResultSet rs = sqlite.readQuery("SELECT jailed, jaileduntil FROM users WHERE username='" + p.getName() + "'");
+		boolean jailed = false;
+		try {
+			jailed = rs.getBoolean("jailed");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if(jailed) {
+			p.sendMessage(ChatColor.RED + "You're not allowed to do that while in jail");
+		}
+		return jailed;
+	}
 	public void onEnable(){
 		getServer().getPluginManager().registerEvents(this, this);
 		sqlite.open();
@@ -406,6 +422,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		if(cmdlogger) {
 			console.sendMessage(ChatColor.GRAY + "Player " + evt.getPlayer().getName() + " entered command: " + evt.getMessage());
 		}
+		evt.setCancelled(preventPlayerFromBreakingOut(evt.getPlayer()));
 	}
 	@EventHandler
 	public void playerChat(AsyncPlayerChatEvent evt) {
@@ -437,8 +454,9 @@ public class MitaBase extends JavaPlugin implements Listener {
 	}
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void blockPlaced(BlockPlaceEvent evt) {
-		Block b = evt.getBlockPlaced();
 		Player player = evt.getPlayer();
+		evt.setCancelled(preventPlayerFromBreakingOut(player));
+		Block b = evt.getBlockPlaced();
 		Location l = b.getLocation();
 		Location lo = b.getLocation();
 		
@@ -490,10 +508,36 @@ public class MitaBase extends JavaPlugin implements Listener {
 	}
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void blockBroke(BlockBreakEvent evt) {
+		Player player = evt.getPlayer();
+		evt.setCancelled(preventPlayerFromBreakingOut(player));
 		Block b = evt.getBlock();
-		//Player player = evt.getPlayer();
 		if(b.getType().equals(Material.CHEST)) {
 			sqlite.modifyQuery("DELETE FROM chests WHERE locX = '" + b.getX()  + "' AND locY = '" + b.getY()  + "' AND locZ =  '" + b.getZ()  + "' AND world = '" + b.getWorld().getName() + "'");	
+		}
+		
+	}
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void enterVehicle(VehicleEnterEvent evt) {
+		try {
+			Player player = (Player) evt.getEntered();
+			evt.setCancelled(preventPlayerFromBreakingOut(player));
+		} catch (Exception e) {
+			
+		}
+		
+	}
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void emptyBucket(PlayerBucketEmptyEvent evt) {
+			Player player = evt.getPlayer();
+			evt.setCancelled(preventPlayerFromBreakingOut(player));
+	}
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void projectileThrown(ProjectileLaunchEvent evt) {
+		try {
+			Player player = (Player) evt.getEntity().getShooter();
+			evt.setCancelled(preventPlayerFromBreakingOut(player));
+		} catch (Exception e) {
+			
 		}
 		
 	}
@@ -779,13 +823,71 @@ public class MitaBase extends JavaPlugin implements Listener {
 					if (p2 != null) {
 						p.openInventory(p2.getInventory());
 					} else {
-						p.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+						p.sendMessage(ChatColor.RED + "Player " + args[0] + " not found.");
+						return true;
 					}
 				} else {
 					return false;
 				}
 			} else if (p == null) {
 				sender.sendMessage(ChatColor.RED + "Only players can use this command");
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		} else if(cmd.getName().equalsIgnoreCase("jail")) {
+			if(p == null || p.hasPermission("MitaBase.jail")) {
+				if(args.length < 2) return false;
+				Player p2 = getServer().getPlayer(args[0]);
+				if(p2 == null) {
+					sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					return true;
+				}
+				String jname = args[1];
+				ResultSet rs = sqlite.readQuery("SELECT locX, locZ, locY, world, COUNT(*) AS numJailsWithThatName FROM jails WHERE jailname = '" + jname + "' GROUP BY world");
+				int x = 0; int y = 0; int z = 0; String world = "";
+				int njwn = 0;
+				try {
+					njwn = rs.getInt("numJailsWithThatName");
+					x = rs.getInt("locX");
+					y = rs.getInt("locY");
+					z = rs.getInt("locZ");
+					world = rs.getString("world");
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if(njwn < 1) {
+					sender.sendMessage(ChatColor.RED + "Jail " + args[1] + " not found");
+					return true;
+				}
+				int seconds = 0;
+				if (args.length >= 3) {
+					try {
+						seconds = Integer.parseInt(args[2]);
+					} catch (Exception e) {
+						sender.sendMessage(ChatColor.RED + args[2] + " is not a valid number");
+						return false;
+					}
+				}
+				DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ");
+				Calendar c = Calendar.getInstance();
+				c.add(Calendar.SECOND, seconds);
+				Date jailUntil = c.getTime();
+				String until = df.format(jailUntil);
+				if(seconds == 0) {
+					until = "Forever";
+				} else {
+					final String pname = args[0];
+					long ticks = seconds*20;
+					getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+
+						   public void run() {
+						       Bukkit.dispatchCommand(console, "unjail " + pname);
+						   }
+						}, ticks);
+				}
+				sqlite.modifyQuery("UPDATE users SET jailed='1', jaileduntil='" + until + "' WHERE username='" + args[0] + "'");
+				p2.teleport(new Location(getServer().getWorld(world), x, y, z));
+				p2.sendMessage(ChatColor.RED + "You've been jailed");
 			} else {
 				noPermission(sender, cmd, args);
 			}
@@ -1106,6 +1208,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else {
 				return false;
 			}
+		
 		} else if (cmd.getName().equalsIgnoreCase("tp")){
 			if(args.length < 1) {
 				sender.sendMessage(ChatColor.RED + "Please specify one player");
@@ -1190,6 +1293,20 @@ public class MitaBase extends JavaPlugin implements Listener {
 						p.sendMessage(ChatColor.RED + "Warp " + wname + " not found");
 					}			
 				}
+			}
+		} else if(cmd.getName().equalsIgnoreCase("unjail")) {
+			if(p == null || p.hasPermission("MitaBase.unjail")) {
+				if(args.length < 1) {
+					return false;
+				}
+				sqlite.modifyQuery("UPDATE users SET jailed='0', jaileduntil='' WHERE username = '" + args[0] + "'");
+				try {
+					getServer().getPlayer(args[0]).sendMessage(ChatColor.GREEN + "You have been unjailed and you can now teleport home");
+				} catch (Exception e) {
+					//TODO send mail as soon as implemented
+				}
+			} else {
+				noPermission(sender, cmd, args);
 			}
 		} else if(cmd.getName().equalsIgnoreCase("unmute")) {
 					if(p == null || p.hasPermission("MitaBase.mute")) {
