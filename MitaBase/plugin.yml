@@ -100,7 +100,7 @@ commands:
     usage: /time [<set|add> <ticks>] [world]
     permission: MitaBase.time
   toggleboom:
-    description: Toggles explosions of creepers
+    description: Toggles explosions of creepers and block stealing by enderman
     usage: /<command> <0|1> [world]
     permission: MitaBase.toggleBoom
     aliases: [tboom, toggleexplosions, tex]  

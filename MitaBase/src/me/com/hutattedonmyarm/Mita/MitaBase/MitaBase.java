@@ -30,9 +30,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFadeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -523,6 +526,19 @@ public class MitaBase extends JavaPlugin implements Listener {
 			sqlite.modifyQuery("DELETE FROM chests WHERE locX = '" + b.getX()  + "' AND locY = '" + b.getY()  + "' AND locZ =  '" + b.getZ()  + "' AND world = '" + b.getWorld().getName() + "'");	
 		}
 		
+	}
+	@EventHandler(priority = EventPriority.LOWEST)
+	public void endermanStoleBlock (EntityChangeBlockEvent evt) {
+		if(evt.getEntityType().equals(EntityType.ENDERMAN)) {
+			ResultSet rs = sqlite.readQuery("SELECT boom FROM worlds WHERE worldname = '" + evt.getBlock().getWorld().getName() + "'");
+			boolean boom = true;
+			try {
+				boom = rs.getBoolean("boom");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			if(!boom) evt.setCancelled(true);
+		}
 	}
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void enterVehicle(VehicleEnterEvent evt) {
