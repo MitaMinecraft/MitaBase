@@ -88,6 +88,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 			String query = "CREATE TABLE jails (jailid INTEGER PRIMARY KEY, jailname TEXT, locX REAL, locY REAL, locZ REAL, world TEXT)";
 			sqlite.modifyQuery(query);
 		}
+		if(!sqlite.tableExists("warnings")) {
+			String query = "CREATE TABLE warnings (warningid INTEGER PRIMARY KEY, userid INTEGER, date TEXT, reason TEXT, by INTEGER, level INTEGER)";
+			sqlite.modifyQuery(query);
+		}
 		
 	}
 	private boolean setupPermissions()
@@ -1393,6 +1397,67 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else if (p == null) {
 				playerOnly(sender);
 				return true;
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		} else if (cmd.getName().equalsIgnoreCase("warning")){
+			if(args.length == 0) {
+				if(p != null && p.hasPermission("MitaBase.warnings.list.self")) {
+					ResultSet rs = sqlite.readQuery("SELECT * FROM warnings WHERE userid = (SELECT userid FROM users WHERE username = '" + p.getName() + "')");
+					int c = 0;
+					try {
+						while(rs.next()) {
+							p.sendMessage(ChatColor.YELLOW + "Level " + rs.getInt("level") + " warning for: " + rs.getString("reason") + ". Date: " + rs.getString("date"));
+							c += rs.getInt("level");
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					sender.sendMessage("Total level: " + c);
+					if(c == 0) p.sendMessage(ChatColor.GREEN + "You don't have any warnings. Take a cookie :)");
+				} else if (p == null) {
+					playerOnly(sender);
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else {
+				if(p == null || p.hasPermission("MitaBase.warnings.list.others")) {
+					ResultSet rs = sqlite.readQuery("SELECT * FROM warnings WHERE userid = (SELECT userid FROM users WHERE username = '" + args[0] + "')");
+					int c = 0;
+					try {
+						while(rs.next()) {
+							sender.sendMessage(ChatColor.YELLOW + "Level " + rs.getInt("level") + " warning for: " + rs.getString("reason") + ". Date: " + rs.getString("date"));
+							c += rs.getInt("level");
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					sender.sendMessage("Total level: " + c);
+					if(c == 0) sender.sendMessage(ChatColor.GREEN + args[0] + " doesn't have any warnings.");
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			}
+		} else if (cmd.getName().equalsIgnoreCase("warn")){
+			if(p == null || p.hasPermission("MitaBase.warnings.issue")) {
+				if(args.length < 3) {
+					return false;
+				}
+				int level = 0;
+				try {
+					level = Integer.parseInt(args[1]);
+				} catch (Exception e) {
+					sender.sendMessage(ChatColor.RED + "'level' must be a number");
+				}
+				String reason = "";
+				for (int i=2; i < args.length; i++) {
+					reason += args[i] + " ";
+				}
+				reason = reason.substring(0, reason.length()-1);
+				DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ");
+				Date date = new Date();
+				String now = df.format(date);
+				sqlite.modifyQuery("INSERT INTO warnings (userid, date, reason, by, level) VALUES ((SELECT userid FROM users WHERE username = '" + args[0]+ "'), '" + now + "', '" + reason + "', (SELECT userid FROM users WHERE username = '" + sender.getName() + "'), '" + level + "')");
 			} else {
 				noPermission(sender, cmd, args);
 			}

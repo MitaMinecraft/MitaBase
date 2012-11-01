@@ -128,6 +128,18 @@ commands:
     description: Makes you vanish from regular players
     usage: /vanish
     permission: MitaBase.vanish
+  warn:
+    description: Issues a waring to a player
+    usage: /warn <player> <reason> <level>
+    permission: MitaBase.warnings.issue
+  warning:
+    description: Lists your/another player's warnings
+    usage: /warnings [player]
+    permission: MitaBase.warnings.list.self
+  warn:
+    description: Issues a warning
+    usage: /warn <player> <level> <reason>
+    permission: MitaBase.warnings.issue
   warp:
     description: Warps a player to warp [name] or lists all warps if no name is provided
     usage: /warp [name]
@@ -186,6 +198,8 @@ permissions:
             MitaBase.toggleBoom: true
             MitaBase.jail: true
             MitaBase.unjail: true
+            MitaBase.warnings.list.others: true
+            MitaBase.warnings.issue: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:
@@ -198,3 +212,4 @@ permissions:
             MitaBase.warp.*: true
             MitaBase.listwarp: true
             MitaBase.time: true
+            MitaBase.warnings.list.self: true
