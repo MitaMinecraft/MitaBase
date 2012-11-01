@@ -1,11 +1,11 @@
 version 1:
-tpa, mail, msg, pvp, nick, delhome, delwarp, groupmessages, warnings, witherdamage, endermandamage,  clean up code
+tpa, mail, msg, pvp, nick, , groupmessages, warnings, witherdamage, endermandamage,  clean up code
 
 version 2: 
 default-values in config, list of commands allowed while being jailed
 
 done:
-home, gamemode, spawn, afk, ban, tp, warp, kick, give, commandlogger, wetter, feed, heal, mute, zeit, invsee, enderchest, list everyone with GameMode gm, vanish,lock chests according to gamemode,mob-schaden ein/aus für jede welt, jail,
+home, gamemode, spawn, afk, ban, tp, warp, kick, give, commandlogger, wetter, feed, heal, mute, zeit, invsee, enderchest, list everyone with GameMode gm, vanish,lock chests according to gamemode,mob-schaden ein/aus für jede welt, jail, delhome, delwarp
 
 todo:
 test vanish, test lgm

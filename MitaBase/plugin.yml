@@ -12,6 +12,18 @@ commands:
     description: Bans a player
     usage: /ban <player> [time in seconds] [reason]
     permission: MitaBase.ban
+  delhome:
+    description: Deletes home [home]
+    usage: /delhome [home]
+    permission: MitaBase.delhome
+  deljail:
+    description: Deletes jail <jail>
+    usage: /deljail <jail>
+    permission: MitaBase.deljail
+  delwarp:
+    description: Deletes warp <warp>
+    usage: /delwaro <warp>
+    permission: MitaBase.delwarp
   enderchest:
     description: Lets you peak in other players' enderchests
     usage: /<command> <player>
@@ -142,6 +154,8 @@ permissions:
             MitaBase.setspawn: true
             MitaBase.createwarp: true
             MitaBase.createjail: true
+            MitaBase.deljail: true
+            MitaBase.delwarp: true
             MitaBase.give: true
             MitaBase.heal: true
             MitaBase.feed: true
@@ -177,6 +191,7 @@ permissions:
         children:
             MitaBase.home: true
             MitaBase.sethome: true
+            MitaBase.delhome: true
             MitaBase.spawn: true
             MitaBase.wspawn: true
             MitaBase.afk: true

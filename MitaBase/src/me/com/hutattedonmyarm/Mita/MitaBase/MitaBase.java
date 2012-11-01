@@ -30,12 +30,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockFadeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -697,6 +695,35 @@ public class MitaBase extends JavaPlugin implements Listener {
 						
 					}
 				}
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		} else if (cmd.getName().equalsIgnoreCase("delhome")){
+			if(p!= null && p.hasPermission("MitaBase.delhome")) {
+				String h = "";
+				if(args.length > 0) h = args[0];
+				sqlite.modifyQuery("DELETE FROM homes WHERE homename = '" + h + "' AND userid = (SELECT userid FROM users WHERE username = '" + p.getName() + "')");
+				p.sendMessage(ChatColor.GREEN + "Your home has been deleted, if you had it in the first place");
+			} else if (p == null) {
+				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		} else if (cmd.getName().equalsIgnoreCase("delwarp")){
+			if(p == null || p.hasPermission("MitaBase.delwarp")) {
+				String h = "";
+				if(args.length > 0) h = args[0];
+				sqlite.modifyQuery("DELETE FROM warps WHERE warpname = '" + h + "'");
+				sender.sendMessage(ChatColor.GREEN + "Warp " + h + " has been deleted");
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		} else if (cmd.getName().equalsIgnoreCase("delwarp")){
+			if(p == null || p.hasPermission("MitaBase.deljail")) {
+				String h = "";
+				if(args.length > 0) h = args[0];
+				sqlite.modifyQuery("DELETE FROM jails WHERE jailname = '" + h + "'");
+				sender.sendMessage(ChatColor.GREEN + "Jail " + h + " has been deleted");
 			} else {
 				noPermission(sender, cmd, args);
 			}
