@@ -79,6 +79,10 @@ commands:
     description: Mutes a player
     usage: /mute <player>
     permission: MitaBase.mute
+  pvp:
+    description: Turns your PVP on or off
+    usage: /pvp <1|0|on|off>
+    permission: MitaBase.pvp
   unmute:
     description: Unmutes a player
     usage: /unmute <player>
@@ -213,3 +217,4 @@ permissions:
             MitaBase.listwarp: true
             MitaBase.time: true
             MitaBase.warnings.list.self: true
+            MitaBase.pvp: true

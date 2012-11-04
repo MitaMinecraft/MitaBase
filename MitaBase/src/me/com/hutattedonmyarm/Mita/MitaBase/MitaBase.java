@@ -65,7 +65,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {		 
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER, jailed INTEGER, jaileduntil TEXT)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -373,7 +373,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
-				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, banned, muted) VALUES ('" + p.getName() + "', 0, 0, 0, 0)");
+				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, banned, muted, pvp) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0)");
 				console.sendMessage(pluginPrefix + ChatColor.GREEN + "New user " + p.getName());
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
@@ -452,16 +452,33 @@ public class MitaBase extends JavaPlugin implements Listener {
 	@EventHandler(priority = EventPriority.LOWEST)	
 	public void playerOuchByMob(EntityDamageByEntityEvent evt) {
 		World w = evt.getEntity().getWorld();
-		ResultSet rs = sqlite.readQuery("SELECT mobdmg FROM worlds WHERE worldname = '" + w.getName() + "'");
-		boolean dmg = true;
-		try {
-			dmg = rs.getBoolean("mobdmg");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		if (!dmg && !evt.getDamager().getType().equals(EntityType.PLAYER)) {
-			evt.setCancelled(true);
-			evt.setDamage(0);
+		if(evt.getDamager().getType().equals(EntityType.PLAYER)) {
+			Player p1 = (Player) evt.getEntity();
+			Player p2 = (Player) evt.getDamager();
+			ResultSet rs = sqlite.readQuery("SELECT pvp FROM users WHERE username = '" + p1.getName() + "'");
+			boolean pvp1 = false;
+			try {
+				pvp1 = rs.getBoolean("pvp");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			rs = sqlite.readQuery("SELECT pvp FROM users WHERE username = '" + p2.getName() + "'");
+			boolean pvp2 = false;
+			try {
+				pvp2 = rs.getBoolean("pvp");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			evt.setCancelled(!(pvp1 && pvp2));
+		} else {
+			ResultSet rs = sqlite.readQuery("SELECT mobdmg FROM worlds WHERE worldname = '" + w.getName() + "'");
+			boolean dmg = true;
+			try {
+				dmg = rs.getBoolean("mobdmg");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+				evt.setCancelled(!dmg);
 		}
 	}
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -1069,6 +1086,28 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else {
 				noPermission(sender, cmd, args);
 			}	
+		} else if (cmd.getName().equalsIgnoreCase("pvp")){
+			if(p != null && p.hasPermission("MitaBase.pvp")) {
+				if(args.length < 1) return false;
+				int pvp = 2;
+				try {
+					pvp = Integer.parseInt(args[0]);
+				} catch (Exception e) {
+					if (args[0].equalsIgnoreCase("on")) {
+						pvp = 1;
+					} else if (args[0].equalsIgnoreCase("off")) {
+						pvp = 0;
+					}
+				}
+				if(!(pvp == 1 || pvp == 0)) {
+					return false;
+				}
+				sqlite.modifyQuery("UPDATE users SET pvp='" + pvp + "'");
+			} else if (p == null) {
+				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
+			}
 		} else if (cmd.getName().equalsIgnoreCase("sethome")){
 			setHome(sender, args, cmd);
 		} else if(cmd.getName().equalsIgnoreCase("setjail")) {
