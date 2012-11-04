@@ -1095,11 +1095,17 @@ public class MitaBase extends JavaPlugin implements Listener {
 				} catch (Exception e) {
 					if (args[0].equalsIgnoreCase("on")) {
 						pvp = 1;
+						
 					} else if (args[0].equalsIgnoreCase("off")) {
 						pvp = 0;
+					
 					}
 				}
-				if(!(pvp == 1 || pvp == 0)) {
+				if (pvp == 1) {
+					p.sendMessage(ChatColor.RED + "PVP is now on");
+				} else if (pvp == 0) {
+					p.sendMessage(ChatColor.GREEN + "PVP is now off");
+				} else {
 					return false;
 				}
 				sqlite.modifyQuery("UPDATE users SET pvp='" + pvp + "'");
