@@ -68,6 +68,15 @@ commands:
     usage: /<command> <gamemode>
     permission: MitaBase.gm.list
     aliases: [lgamemode, lgm]
+  mail:
+    description: View & send mails
+    usage: /<command> [<player> <message>|<clear>]
+    permission: MitaBase.mail
+  message:
+    description: Sends a message to player <player>
+    usage: /<command> <player> <message>
+    permission: MitaBase.msg
+    aliases: [msg, w]
   mitabase:
     aliases: mb
   mobdamage:
@@ -87,6 +96,11 @@ commands:
     description: Unmutes a player
     usage: /unmute <player>
     permission: MitaBase.mute
+  reply:
+    description: Replies your current conversation-partner
+    usage: /<command> <message>
+    permission: MitaBase.msg
+    aliases: r
   sethome:
     description: Sets the homepoint of the player at the players location
     usage: /sethome [homename]
@@ -218,3 +232,5 @@ permissions:
             MitaBase.time: true
             MitaBase.warnings.list.self: true
             MitaBase.pvp: true
+            MitaBase.msg: true
+            MitaBase.mail: true

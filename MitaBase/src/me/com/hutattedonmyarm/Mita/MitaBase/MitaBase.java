@@ -54,6 +54,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 	
 	private String pluginPrefix = "[MitaBase] ";
 	private String databaseName = "MitaBaseDB.db";
+	private String console_last_messaged = "";
 	
 	private ConsoleCommandSender console;
 	
@@ -65,7 +66,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {		 
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -90,6 +91,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 		}
 		if(!sqlite.tableExists("warnings")) {
 			String query = "CREATE TABLE warnings (warningid INTEGER PRIMARY KEY, userid INTEGER, date TEXT, reason TEXT, by INTEGER, level INTEGER)";
+			sqlite.modifyQuery(query);
+		}
+		if(!sqlite.tableExists("mail")) {
+			String query = "CREATE TABLE mail (mailid INTEGER PRIMARY KEY, senderid INTEGER, receiverid INTEGER, message TEXT)";
 			sqlite.modifyQuery(query);
 		}
 		
@@ -469,7 +474,13 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-			evt.setCancelled(!(pvp1 && pvp2));
+			if(pvp1 && pvp2) {
+				evt.setCancelled(false);
+			} else {
+				evt.setCancelled(true);
+			}
+			console.sendMessage("PVP1 " + pvp1 + " PVP2 " + pvp2);
+	
 		} else {
 			ResultSet rs = sqlite.readQuery("SELECT mobdmg FROM worlds WHERE worldname = '" + w.getName() + "'");
 			boolean dmg = true;
@@ -1013,6 +1024,80 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else {
 				noPermission(sender, cmd, args);
 			}
+		} else if(cmd.getName().equalsIgnoreCase("mail")) {
+			if(p != null && p.hasPermission("MitaBase.mail")) {
+				if(args.length == 0) {
+					String msg_sender = "";
+					String message = "";
+					boolean new_msg = false;
+					ResultSet rs = sqlite.readQuery("SELECT username, message FROM users AS u, mail AS m WHERE u.userid = m.senderid AND m.receiverid = (SELECT userid FROM users WHERE username = '" + p.getName() + "')");
+					sender.sendMessage(ChatColor.BLUE + "You can write new mails by typing /mail <player> <message> or mark all your mails as read by doing /mail clear");
+					try {
+						while (rs.next()) {
+							msg_sender = rs.getString("username");
+							message = rs.getString("message");
+							new_msg = true;
+							sender.sendMessage(ChatColor.YELLOW+ msg_sender + ": " + ChatColor.RESET + message);
+						}
+						
+					} catch (Exception e) {
+						
+					}
+					if(!new_msg) {
+						sender.sendMessage(ChatColor.BLUE + "You don't have any new mail");
+					}
+				} else if (args.length == 1) {
+					if(args[0].equalsIgnoreCase("clear")) {
+						sqlite.modifyQuery("DELETE FROM messages WHERE receiverid = (SELECT userid FROM users WHERE username = '" + sender.getName() + "')");
+						sender.sendMessage(ChatColor.GREEN + "Mail cleared");
+					} else {
+						return false;
+					}
+				} else {
+					String message = "";
+					for(int i = 1; i < args.length; i++) {message += args[i] + "";}
+					int pid = -1;
+					ResultSet rs = sqlite.readQuery("SELECT userid FROM users WHERE username = '" + args[0] + "'");
+					try {
+						pid = rs.getInt("userid");
+						sqlite.modifyQuery("INSERT INTO mail (senderid, receiverid, message) VALUES ((SELECT userid FROM users WHERE username = '" + sender.getName() + "'),  " + pid + ", '" + message + "')");
+					} catch (Exception e) {
+						sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+						return false;
+					}
+				}
+			} else if (p == null) {
+				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
+			}
+			
+		} else if(cmd.getName().equalsIgnoreCase("message")) {
+			if(p == null || p.hasPermission("MitaBase.msg")) {
+				if(args.length < 2) return false;
+				String msg = "";
+				for(int i = 1; i < args.length; i++) {
+					msg += args[i] + " ";
+				}
+				Player partner = getServer().getPlayer(args[0]);
+				if(partner == null && !args[0].equalsIgnoreCase("console")) {
+					sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					return true;
+				}
+				if(p == partner) { p.sendMessage("Haha, very funny..."); return true; }
+				if(p == null) console_last_messaged = partner.getName();
+				if (partner == null) {
+					console.sendMessage(ChatColor.GRAY + "[" + sender.getName() + " -> Console] " + ChatColor.RESET + msg);
+					sender.sendMessage(ChatColor.GRAY + "[" + sender.getName() + " -> Console] " + ChatColor.RESET + msg);
+					sqlite.modifyQuery("UPDATE users SET last_messaged = '0' WHERE username = '" + sender.getName() + "'");
+				} else {
+					partner.sendMessage(ChatColor.GRAY + "[" +  sender.getName() + " -> " + partner.getName() + "] " + ChatColor.RESET + msg);
+					sender.sendMessage(ChatColor.GRAY + "[" +  sender.getName() + " -> " + partner.getName() + "] " + ChatColor.RESET + msg);
+					sqlite.modifyQuery("UPDATE users SET last_messaged = (SELECT userid FROM users WHERE username = '" + partner.getName() + "') WHERE username = '" + sender.getName() + "'");
+				}
+			} else {
+				noPermission(sender, cmd, args);
+			}
 		} else if(cmd.getName().equalsIgnoreCase("mitabase")) {
 			if((p == null || p.hasPermission("MitaBase.reload")) && args.length > 0 && args[0].equalsIgnoreCase("reload")) {
 				onDisable();
@@ -1086,6 +1171,50 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else {
 				noPermission(sender, cmd, args);
 			}	
+		}  else if(cmd.getName().equalsIgnoreCase("reply")) {
+			if(p == null || p.hasPermission("MitaBase.msg")) {
+				if(args.length < 1) return false;
+				String msg = "";
+				for(int i = 0; i < args.length; i++) {
+					msg += args[i] + " ";
+				}
+				
+				String pa = "";
+				int id = -1;
+				if(p != null) {
+					ResultSet rs = sqlite.readQuery("SELECT last_messaged FROM users WHERE username = '" + p.getName() + "'");
+					try {
+						id = rs.getInt("last_messaged");
+						rs.close();
+						rs = sqlite.readQuery("SELECT username FROM users WHERE userid = '" + id + "'");
+						pa = rs.getString("username");
+					} catch (Exception e) {
+					}
+				} else {
+					pa = console_last_messaged;
+				}
+				if(id == 0) {
+					pa = "Console";
+				}
+				Player partner = getServer().getPlayer(pa);
+				if(partner == null && !pa.equalsIgnoreCase("console")) {
+					sender.sendMessage(ChatColor.RED + "Player " + pa + " not found");
+					return true;
+				}
+				if(p == partner) { p.sendMessage("Haha, very funny..."); return true; }
+				if(p == null) console_last_messaged = partner.getName();
+				if (partner == null) {
+					console.sendMessage(ChatColor.GRAY + "[" + sender.getName() + " -> Console] " + ChatColor.RESET + msg);
+					sender.sendMessage(ChatColor.GRAY + "[" + sender.getName() + " -> Console] " + ChatColor.RESET + msg);
+					sqlite.modifyQuery("UPDATE users SET last_messaged = '0' WHERE username = '" + sender.getName() + "'");
+				} else {
+					partner.sendMessage(ChatColor.GRAY + "[" +  sender.getName() + " -> " + partner.getName() + "] " + ChatColor.RESET + msg);
+					sender.sendMessage(ChatColor.GRAY + "[" +  sender.getName() + " -> " + partner.getName() + "] " + ChatColor.RESET + msg);
+					sqlite.modifyQuery("UPDATE users SET last_messaged = (SELECT userid FROM users WHERE username = '" + partner.getName() + "') WHERE username = '" + sender.getName() + "'");
+				}
+			} else {
+				noPermission(sender, cmd, args);
+			}
 		} else if (cmd.getName().equalsIgnoreCase("pvp")){
 			if(p != null && p.hasPermission("MitaBase.pvp")) {
 				if(args.length < 1) return false;
