@@ -2,4 +2,4 @@ see github!
 
 
 todo:
-test msg, test mail
+test msg, test mail, test potion, test colored chat

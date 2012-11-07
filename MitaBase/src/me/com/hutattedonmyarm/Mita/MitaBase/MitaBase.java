@@ -71,7 +71,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 	private SQLite sqlite = new SQLite(logger, "[MitaBase]", databaseName, "plugins/MitaBase/");
 	private Chat chat = null;
 
-	private void setupDatabase() {		 
+	private void setupDatabase() {
 		if (!sqlite.tableExists("users")) {
 			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER)";
 			sqlite.modifyQuery(query);
@@ -368,6 +368,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 	private void playerOnly (CommandSender sender) {
 		sender.sendMessage(ChatColor.RED + "Only players can use this command");
 	}
+    private String colorize(String s){
+    	if(s == null) return null;
+    	return s.replaceAll("&([0-9a-f])", "\u00A7$1");
+    }
 	public void onEnable(){
 		getServer().getPluginManager().registerEvents(this, this);
 		sqlite.open();
@@ -459,6 +463,9 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
+		}
+		if(!evt.isCancelled()) {
+			evt.setMessage(colorize(evt.getMessage()));
 		}
 	}
 	@EventHandler(priority = EventPriority.LOWEST)	
@@ -1588,7 +1595,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 				try {
 					getServer().getPlayer(args[0]).sendMessage(ChatColor.GREEN + "You have been unjailed and you can now teleport home");
 				} catch (Exception e) {
-					//TODO send mail as soon as implemented
+					sqlite.modifyQuery("INSERT INTO mail (senderid, receiverid, message) VALUES ((SELECT userid FROM users WHERE username = '" + args[0] + "'), (SELECT userid FROM users WHERE username = '" + sender.getName() + "'), 'You have been unjailed and you can now teleport home')");
 				}
 			} else {
 				noPermission(sender, cmd, args);
