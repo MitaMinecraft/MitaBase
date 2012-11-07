@@ -786,6 +786,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 					sender.sendMessage("Player " + args[0] + "not found");
 				}
 				opfer.setBanned(!opfer.isBanned());
+				if(opfer.isBanned()) sender.sendMessage(args[0] + ChatColor.RED + " has been banned");
+				if(!opfer.isBanned()) sender.sendMessage(args[0] + ChatColor.GREEN + " has been unbanned");
 				if(opfer.isOnline()) { 
 					Player o = (Player) opfer;
 					String reason = "";
