@@ -8,6 +8,9 @@ spawn:
 #Default value, can be changed per user
 max_num_of_homes: 3
 
+#If a user reaches their warning-level-limit, they'll be banned automatically. You can specify the level of a warning when you issue i, and the levels from all of a user's warnings will be added together. Set to 0 if you want to disable this
+warning_level_limit: 4
+
 #Logs every single command (by all plugins) to the console, even if used the wrong way or will be cancelled
 command_logger: true
 
@@ -20,6 +23,8 @@ colors:
     Admin: RED
   
   players:
+
+
 new_user:
   #{username} will be replaced with the players name
   welcome_message: "Welcome {username} to the Server"

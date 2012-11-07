@@ -425,21 +425,21 @@ public class MitaBase extends JavaPlugin implements Listener {
 		String group = permission.getPrimaryGroup(p);
 		console.sendMessage("group: " + group);
 		String color = colorize("&f");
-		ChatColor c = ChatColor.WHITE;
+		//ChatColor c = ChatColor.WHITE;
 		try {
 			color = colorize(chat.getPlayerPrefix(p));
-			c = ChatColor.valueOf(chat.getPlayerPrefix(p));
+			//c = ChatColor.valueOf(chat.getPlayerPrefix(p));
 		} catch (Exception e) {
 		}	
 		try {
 			color = colorize(getConfig().getString("colors.groups." + group));
-			c = ChatColor.valueOf(getConfig().getString("colors.groups." + group));
+			//c = ChatColor.valueOf(getConfig().getString("colors.groups." + group));
 			console.sendMessage("groupcolor: " + getConfig().getString("colors.groups." + group));
 		} catch (Exception e) {
 		}
 		try {
 			color = colorize(getConfig().getString("colors.players." + p.getName()));
-			c = ChatColor.valueOf(getConfig().getString("colors.players." + p.getName()));
+			//c = ChatColor.valueOf(getConfig().getString("colors.players." + p.getName()));
 			console.sendMessage("playercolor: " + getConfig().getString("colors.players." + p.getName()));
 		} catch (Exception e) {
 		}
@@ -771,7 +771,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 							}
 							sqlite.modifyQuery("UPDATE users SET banned=1, reason='" + reason + "', until='"+ until + "', by='" + bannername + "' WHERE username='" + args[0] + "'");
 							Bukkit.getServer().broadcastMessage(ChatColor.YELLOW + "Player " + args[0] + " has been banned by " + bannername + " until " + until + ". Reason: " + reason);
-							p.kickPlayer("You're banned until " + until + ". Reason: " + reason);
+							if(p != null) p.kickPlayer("You're banned until " + until + ". Reason: " + reason);
 						
 					}
 				}
@@ -1699,6 +1699,20 @@ public class MitaBase extends JavaPlugin implements Listener {
 				Date date = new Date();
 				String now = df.format(date);
 				sqlite.modifyQuery("INSERT INTO warnings (userid, date, reason, by, level) VALUES ((SELECT userid FROM users WHERE username = '" + args[0]+ "'), '" + now + "', '" + reason + "', (SELECT userid FROM users WHERE username = '" + sender.getName() + "'), '" + level + "')");
+				int warning_level_limit = getConfig().getInt("warning_level_limit");
+				ResultSet rs = sqlite.readQuery("SELECT level FROM warnings WHERE userid = (SELECT userid FROM users WHERE username = '" + args[0] + "')");
+				int c = 0;
+				try {
+					while(rs.next()) {
+						c += rs.getInt("level");
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if(c >= warning_level_limit && warning_level_limit != 0) {
+					sender.sendMessage(args[0] + ChatColor.RED + " has exceeded the limit of the warning level and will be banned.");
+					getServer().dispatchCommand(console, "ban " + args[0] + "You've exceeded your limits of warnings");
+				}
 			} else {
 				noPermission(sender, cmd, args);
 			}
