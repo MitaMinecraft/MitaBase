@@ -20,6 +20,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
@@ -710,8 +711,13 @@ public class MitaBase extends JavaPlugin implements Listener {
 				playerOnly(sender);
 			}
 		}else if(cmd.getName().equalsIgnoreCase("ban")) {
+			String all = "";
+			for(int i = 0; i < args.length; i++) {
+				all += args[i] + "+";
+			}
+			console.sendMessage(all);
 			if(p == null || p.hasPermission("MitaBase.ban")) {
-				if(args.length < 1) {
+				/*if(args.length < 1) {
 					sender.sendMessage(ChatColor.RED + "Too few arguments");
 				} else {
 					Player p2 = Bukkit.getOfflinePlayer(args[0]).getPlayer();
@@ -774,6 +780,19 @@ public class MitaBase extends JavaPlugin implements Listener {
 							if(p != null) p.kickPlayer("You're banned until " + until + ". Reason: " + reason);
 						
 					}
+				}*/
+				OfflinePlayer opfer = getServer().getOfflinePlayer(args[0]);
+				if(opfer == null) {
+					sender.sendMessage("Player " + args[0] + "not found");
+				}
+				opfer.setBanned(!opfer.isBanned());
+				if(opfer.isOnline()) { 
+					Player o = (Player) opfer;
+					String reason = "";
+					for(int i = 1; i < args.length; i++) {
+						reason += args[i] + " ";
+					}
+					o.kickPlayer(reason);
 				}
 			} else {
 				noPermission(sender, cmd, args);
@@ -1684,6 +1703,15 @@ public class MitaBase extends JavaPlugin implements Listener {
 				if(args.length < 3) {
 					return false;
 				}
+				ResultSet rs = sqlite.readQuery("SELECT level FROM warnings WHERE userid = (SELECT userid FROM users WHERE username = '" + args[0] + "')");
+				int c = 0;
+				try {
+					while(rs.next()) {
+						c += rs.getInt("level");
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 				int level = 0;
 				try {
 					level = Integer.parseInt(args[1]);
@@ -1700,18 +1728,11 @@ public class MitaBase extends JavaPlugin implements Listener {
 				String now = df.format(date);
 				sqlite.modifyQuery("INSERT INTO warnings (userid, date, reason, by, level) VALUES ((SELECT userid FROM users WHERE username = '" + args[0]+ "'), '" + now + "', '" + reason + "', (SELECT userid FROM users WHERE username = '" + sender.getName() + "'), '" + level + "')");
 				int warning_level_limit = getConfig().getInt("warning_level_limit");
-				ResultSet rs = sqlite.readQuery("SELECT level FROM warnings WHERE userid = (SELECT userid FROM users WHERE username = '" + args[0] + "')");
-				int c = 0;
-				try {
-					while(rs.next()) {
-						c += rs.getInt("level");
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				if(c >= warning_level_limit && warning_level_limit != 0) {
+				console.sendMessage("Limit: " + warning_level_limit + ", level: " + (c + level));
+				if(c +level >= warning_level_limit && warning_level_limit != 0) {
 					sender.sendMessage(args[0] + ChatColor.RED + " has exceeded the limit of the warning level and will be banned.");
-					getServer().dispatchCommand(console, "ban " + args[0] + "You've exceeded your limits of warnings");
+					String cmd_line = "ban " + args[0] + " You have exceeded your limits of warnings";
+					getServer().dispatchCommand(console, cmd_line);
 				}
 			} else {
 				noPermission(sender, cmd, args);
