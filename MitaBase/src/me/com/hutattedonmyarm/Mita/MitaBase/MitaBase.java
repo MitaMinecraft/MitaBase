@@ -8,7 +8,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
@@ -24,7 +26,9 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.ThrownPotion;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -34,6 +38,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
@@ -45,6 +50,8 @@ import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.permission.*;
@@ -632,6 +639,36 @@ public class MitaBase extends JavaPlugin implements Listener {
 			if(!boom) evt.setCancelled(true);
 		}
 	}
+    @EventHandler
+    public void onSplash(PotionSplashEvent event) {
+    	ThrownPotion potion = event.getEntity();
+    	for(PotionEffect effect : potion.getEffects()) {
+    		if(effect.getType() == PotionEffectType.INVISIBILITY) {
+    			Collection<LivingEntity> les = event.getAffectedEntities(); // To prevent the concurrent exception
+    			final ArrayList<String> unaffected = new ArrayList<String>();
+    			for(LivingEntity le : les) {
+    				if(le instanceof Player) {
+    					if(((Player)le).hasPermission("no.invis.perm")) {
+    						unaffected.add(((Player)le).getName());
+    					}
+    				}
+    			}
+    			if(unaffected.size() > 0) {
+    				Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+    					@Override
+    					public void run() {
+    						for(String name : unaffected) {
+    							Player p = Bukkit.getPlayer(name);
+    							if(p != null) {
+    								p.removePotionEffect(PotionEffectType.INVISIBILITY);
+    							}
+    						}
+    					}
+    				}, 1L);
+    			}
+    		}
+    	}
+    	}
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(!cmdlogger) {
 			String argString = " ";
@@ -1326,6 +1363,25 @@ public class MitaBase extends JavaPlugin implements Listener {
 				p.teleport(new Location(Bukkit.getServer().getWorld(getConfig().getString("spawn.world")), getConfig().getDouble("spawn.x"), getConfig().getDouble("spawn.y"), getConfig().getDouble("spawn.z")));
 			}
 		
+		} else if(cmd.getName().equalsIgnoreCase("sudo")) {
+			if(p == null || p.hasPermission("MitaBase.sudo")) {
+				if(args.length < 2) {
+					return false;
+				}
+				Player pl = getServer().getPlayer(args[0]);
+				if(pl == null) {
+					sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					return true;
+				}
+				String command = "";
+				for(int i = 0; i < args.length; i++) {
+					command += args[i] + " ";
+				}
+				command = command.substring(0, command.length()-1);
+				getServer().dispatchCommand(pl, command);
+			} else {
+				noPermission(sender, cmd, args);
+			}
 		} else if(cmd.getName().equalsIgnoreCase("time")) {
 			/*
 			 * 0 Arguments: Print time of current world

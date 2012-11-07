@@ -125,6 +125,10 @@ commands:
     description: Teleports the player to the spawn of the server
     usage: /spawn
     permission: MitaBase.spawn
+  sudo:
+    description: Forces another player to execute a command
+    usage: /sudo <player> <command>
+    permission: MitaBase.sudo
   time:
     description: Shows, or sets the time
     usage: /time [<set|add> <ticks>] [world]
@@ -177,6 +181,7 @@ permissions:
             MitaBase.admin.*: true
             MitaBase.unlimitedHomes: true
             MitaBase.banprotected: true
+            MitaBase.sudo: true
     MitaBase.admin.*:
         description: Gives access to all admin-commands from MitaBase
         children:
