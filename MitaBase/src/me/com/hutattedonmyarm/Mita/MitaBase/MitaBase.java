@@ -424,22 +424,26 @@ public class MitaBase extends JavaPlugin implements Listener {
 		}
 		String group = permission.getPrimaryGroup(p);
 		console.sendMessage("group: " + group);
+		String color = colorize("&f");
 		ChatColor c = ChatColor.WHITE;
 		try {
+			color = colorize(chat.getPlayerPrefix(p));
 			c = ChatColor.valueOf(chat.getPlayerPrefix(p));
 		} catch (Exception e) {
 		}	
 		try {
+			color = colorize(getConfig().getString("colors.groups." + group));
 			c = ChatColor.valueOf(getConfig().getString("colors.groups." + group));
 			console.sendMessage("groupcolor: " + getConfig().getString("colors.groups." + group));
 		} catch (Exception e) {
 		}
 		try {
+			color = colorize(getConfig().getString("colors.players." + p.getName()));
 			c = ChatColor.valueOf(getConfig().getString("colors.players." + p.getName()));
 			console.sendMessage("playercolor: " + getConfig().getString("colors.players." + p.getName()));
 		} catch (Exception e) {
 		}
-		p.setPlayerListName(c + p.getName());
+		p.setPlayerListName(color + p.getName());
 	}
 	@EventHandler
 	public void playerLogout(PlayerQuitEvent evt){
