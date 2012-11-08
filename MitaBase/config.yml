@@ -14,6 +14,11 @@ warning_level_limit: 4
 #Logs every single command (by all plugins) to the console, even if used the wrong way or will be cancelled
 command_logger: true
 
+#These commands are allowed while a player is in jail (of course, only if they have the permission)
+allowed_commands_in_jail:
+  - login
+  - afk
+
 #Color of a group/player in the tablist. First, the color from a chatplugin is used. If the groups color is set here it overwrites that and player-colors overwrite group-colors. If nothing is set white is used
 colors:
   groups:

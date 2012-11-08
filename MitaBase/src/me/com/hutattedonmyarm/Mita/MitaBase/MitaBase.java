@@ -1,8 +1,4 @@
 package me.com.hutattedonmyarm.Mita.MitaBase;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.IllegalArgumentException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,6 +22,7 @@ import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -65,6 +62,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 	private String console_last_messaged = "";
 	
 	private ConsoleCommandSender console;
+	SimpleCommandMap cm;
 	
 	private boolean cmdlogger = true;
 	
@@ -127,6 +125,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 	    setupPermissions();
 	    setupChat();
 	    cmdlogger = getConfig().getBoolean("command_logger");
+	    cm = new SimpleCommandMap(getServer());
+	    //cm.registerAll(fallbackPrefix, commands);
 	    console.sendMessage(pluginPrefix + "Scanning for worlds...");
 	    
 	    //Getting all worlds and add them to the DB if they don't exist 
@@ -455,7 +455,14 @@ public class MitaBase extends JavaPlugin implements Listener {
 		if(cmdlogger) {
 			console.sendMessage(ChatColor.GRAY + "Player " + evt.getPlayer().getName() + " entered command: " + evt.getMessage());
 		}
-		evt.setCancelled(preventPlayerFromBreakingOut(evt.getPlayer()));
+		List<String> commands = getConfig().getStringList("allowed_commands_in_jail");
+		String m = evt.getMessage().substring(1, evt.getMessage().length()).split(" ")[0];
+		String cmd = getServer().getPluginCommand(m).getName();
+		//if (cmd != null) evt.setCancelled(preventPlayerFromBreakingOut(evt.getPlayer()) && !commands.contains(cmd));
+		//if (cmd == null) evt.setCancelled(preventPlayerFromBreakingOut(evt.getPlayer()));
+		if(cmd != null && !commands.contains(cmd) && preventPlayerFromBreakingOut(evt.getPlayer())) {
+			evt.setCancelled(true);
+		}
 	}
 	@EventHandler
 	public void playerChat(AsyncPlayerChatEvent evt) {
@@ -1005,7 +1012,6 @@ public class MitaBase extends JavaPlugin implements Listener {
 					z = rs.getInt("locZ");
 					world = rs.getString("world");
 				} catch (Exception e) {
-					e.printStackTrace();
 				}
 				if(njwn < 1) {
 					sender.sendMessage(ChatColor.RED + "Jail " + args[1] + " not found");
