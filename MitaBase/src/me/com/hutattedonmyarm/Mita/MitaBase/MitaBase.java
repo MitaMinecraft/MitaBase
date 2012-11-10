@@ -472,7 +472,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		if(!evt.isCancelled()) {
+		if(!evt.isCancelled() && evt.getPlayer().hasPermission("MitaBase.coloredchat")) {
 			evt.setMessage(colorize(evt.getMessage()));
 		}
 	}

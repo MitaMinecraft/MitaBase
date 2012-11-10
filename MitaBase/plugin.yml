@@ -229,6 +229,7 @@ permissions:
             MitaBase.unjail: true
             MitaBase.warnings.list.others: true
             MitaBase.warnings.issue: true
+            MitaBase.coloredchat: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:
