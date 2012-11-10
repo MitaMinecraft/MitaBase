@@ -12,6 +12,11 @@ commands:
     description: Bans a player
     usage: /ban <player> [time in seconds] [reason]
     permission: MitaBase.ban
+  banreason:
+    description: Displays the reason why a player has been banned
+    usage: /<command> <player>
+    permission: MitaBase.banreason
+    aliases: whyban
   delhome:
     description: Deletes home [home]
     usage: /delhome [home]
@@ -196,6 +201,7 @@ permissions:
             MitaBase.feed: true
             MitaBase.setTime: true
             MitaBase.toggleMobDamage: true
+            MitaBase.banreason: true
     MitaBase.mod.*:
         description: Gives access to all mod-commands from MitaBase
         children:

@@ -23,7 +23,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.SimpleCommandMap;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -51,12 +50,8 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-
 import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.permission.*;
-import net.minecraft.server.MobEffect;
-import net.minecraft.server.MobEffectList;
-import net.minecraft.server.Packet41MobEffect;
 
 public class MitaBase extends JavaPlugin implements Listener {
 	private Logger logger = Bukkit.getServer().getLogger();
@@ -76,7 +71,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER)";
+			//String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -394,12 +390,11 @@ public class MitaBase extends JavaPlugin implements Listener {
 	@EventHandler
 	public void playerJoin(PlayerJoinEvent evt) {
 		Player p = evt.getPlayer();
-		ResultSet rs = sqlite.readQuery("SELECT userid, banned, reason, until FROM users WHERE username = '" + p.getName() + "'");
+		ResultSet rs = sqlite.readQuery("SELECT userid FROM users WHERE username = '" + p.getName() + "'");
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
-				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, banned, muted, pvp) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0)");
-				console.sendMessage(pluginPrefix + ChatColor.GREEN + "New user " + p.getName());
+				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp) VALUES ('" + p.getName() + "', 0, 0, 0, 0)");
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
 				try {
@@ -413,20 +408,6 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}
 				}
 				Bukkit.getServer().broadcastMessage(mc + getConfig().getString("new_user.welcome_message").replace("{username}", uc + p.getName() + mc));
-			} else { //Yay, a user came back! :) Let's see if they're banned...
-				int banned = rs.getInt("banned");
-				if(banned == 1){ //Okay, banned... but maybe the ban is already over?
-					Date until = new Date();
-					String u = rs.getString("until");
-					if (!u.equals("Forever")) {
-						until = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss ZZ").parse(u);
-					}
-					if(until.before(new Date())) {
-						sqlite.modifyQuery("UPDATE users SET banned=0, reason='', until='', by='' WHERE username='" + p.getName() + "'");
-					} else {
-						p.kickPlayer("You're banned until " + u + ". Reason: " + rs.getString("reason"));
-					}
-				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -732,70 +713,6 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}
 			console.sendMessage(all);
 			if(p == null || p.hasPermission("MitaBase.ban")) {
-				/*if(args.length < 1) {
-					sender.sendMessage(ChatColor.RED + "Too few arguments");
-				} else {
-					Player p2 = Bukkit.getOfflinePlayer(args[0]).getPlayer();
-					if(p2 == null) {
-						sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found! Trying to ban offline player");
-					}
-						if(p2 == null || !p2.hasPermission("MitaBase.banprotect") || (p == null || p.hasPermission("MitaBase.banprotected"))) {
-							int sec = 0;
-							String reason = "Banned by an operator";
-							if(args.length > 1) {
-								try {
-									sec = Integer.parseInt(args[1]);
-								} catch(Exception e){
-									sec = 0;
-								}
-								if(sec == 0){
-									for(int i = 1; i < args.length; i++) {
-										reason += args[i];
-										reason += "";
-									}
-								} else if (args.length > 2){
-									reason = "";
-									for(int i = 2; i < args.length; i++) {
-										reason += args[i];
-										reason += "";
-									}
-								}
-							} else {
-								sec = 0;
-							}
-							String bannername = "Console";
-							if(p != null) bannername = p.getName();
-							DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ");
-							Date date = new Date();
-							String now = df.format(date);
-							Calendar c = Calendar.getInstance();
-							c.add(Calendar.SECOND, sec);
-							Date banUntil = c.getTime();
-							String until = df.format(banUntil);
-							if (sec == 0) until = "Forever";
-							String finalText = args[0] + "|" + now + "|" + bannername + "|" + until + "|" + reason;
-							File f = new File("banned-players.txt");
-							if(!f.exists()) {
-								sender.sendMessage(ChatColor.RED + "An error occured, the ban-file cannot be found!");
-							} else {
-								FileWriter fstream;
-								try {
-									fstream = new FileWriter(f.getAbsolutePath(),true);
-									BufferedWriter out = new BufferedWriter(fstream);
-									out.write(finalText);
-									out.newLine();
-									out.close();
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
-								
-							}
-							sqlite.modifyQuery("UPDATE users SET banned=1, reason='" + reason + "', until='"+ until + "', by='" + bannername + "' WHERE username='" + args[0] + "'");
-							Bukkit.getServer().broadcastMessage(ChatColor.YELLOW + "Player " + args[0] + " has been banned by " + bannername + " until " + until + ". Reason: " + reason);
-							if(p != null) p.kickPlayer("You're banned until " + until + ". Reason: " + reason);
-						
-					}
-				}*/
 				OfflinePlayer opfer = getServer().getOfflinePlayer(args[0]);
 				if(opfer == null) {
 					sender.sendMessage("Player " + args[0] + "not found");
@@ -824,15 +741,38 @@ public class MitaBase extends JavaPlugin implements Listener {
 				opfer.setBanned(!opfer.isBanned());
 				if(opfer.isBanned()) { 
 					sender.sendMessage(args[0] + ChatColor.RED + " has been banned");
-					sqlite.modifyQuery("INSERT INTO bans (by, playerid, reason, date) VALUES ((SELECT userid FROM users WHERE username = '" + sender.getName() +"'), (SELECT userid FROM users WHERE username = '" + opfer.getName() +"), '" + reason + "', '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "')");
-				}
+					sqlite.modifyQuery("INSERT INTO bans (by, playerid, reason, date) VALUES ((SELECT userid FROM users WHERE username = '" + sender.getName() +"'), (SELECT userid FROM users WHERE username = '" + opfer.getName() +"'), '" + reason + "', '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "')");
+					}
 				if(!opfer.isBanned()) {
 					sender.sendMessage(args[0] + ChatColor.GREEN + " has been unbanned");
-					sqlite.modifyQuery("DELETE FROM bans WHERE playerid = (SELECT userid FROM users WHERE username = '" + opfer.getName() +") AND by = (SELECT userid FROM users WHERE username = '" + sender.getName() +"')");
+					sqlite.modifyQuery("DELETE FROM bans WHERE playerid = (SELECT userid FROM users WHERE username = '" + opfer.getName() + "')");
 				}
 				if(opfer.isOnline()) { 
 					Player o = (Player) opfer;
 					o.kickPlayer(reason);
+				}
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		}else if(cmd.getName().equalsIgnoreCase("banreason")) {
+			if(p == null || p.hasPermission("MitBase.banreson")) {
+				if(args.length < 1) return false;
+				ResultSet rs = sqlite.readQuery("SELECT reason, date, by FROM bans WHERE playerid = (SELECT userid FROM users WHERE username = '" + args[0] + "')");
+				String msg = "";
+				try {
+					int by = rs.getInt("by");
+					String reason = rs.getString("reason");
+					String date = rs.getString("date");
+					ResultSet rs2 = sqlite.readQuery("SELECT username FROM users WHERE userid = '" + by + "'");
+					try {
+						msg = "Player " + args[0] + " has been banned for " + reason + "by " + rs2.getString("username") + " on " + date;
+					} catch (Exception e){
+						msg = "Player " + args[0] + " has been banned for " + reason + "by Console on " + date;
+					}
+					
+					sender.sendMessage(msg);
+				} catch (Exception e) {
+					sender.sendMessage(args[0] + ChatColor.RED + " is not banned");
 				}
 			} else {
 				noPermission(sender, cmd, args);
