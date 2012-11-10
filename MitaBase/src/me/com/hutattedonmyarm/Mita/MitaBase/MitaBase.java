@@ -71,8 +71,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {
 		if (!sqlite.tableExists("users")) {
-			//String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, banned INTEGER, reason TEXT, until TEXT, by TEXT, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER)";
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -394,7 +393,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
-				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp) VALUES ('" + p.getName() + "', 0, 0, 0, 0)");
+				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0)");
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
 				try {
@@ -415,25 +414,33 @@ public class MitaBase extends JavaPlugin implements Listener {
 		String group = permission.getPrimaryGroup(p);
 		console.sendMessage("group: " + group);
 		String color = colorize("&f");
-		//ChatColor c = ChatColor.WHITE;
 		try {
 			color = colorize(chat.getPlayerPrefix(p));
-			//c = ChatColor.valueOf(chat.getPlayerPrefix(p));
 		} catch (Exception e) {
 		}	
 		try {
 			color = colorize(getConfig().getString("colors.groups." + group));
-			//c = ChatColor.valueOf(getConfig().getString("colors.groups." + group));
 			console.sendMessage("groupcolor: " + getConfig().getString("colors.groups." + group));
 		} catch (Exception e) {
 		}
 		try {
 			color = colorize(getConfig().getString("colors.players." + p.getName()));
-			//c = ChatColor.valueOf(getConfig().getString("colors.players." + p.getName()));
 			console.sendMessage("playercolor: " + getConfig().getString("colors.players." + p.getName()));
 		} catch (Exception e) {
 		}
 		p.setPlayerListName(color + p.getName());
+		for(Player player: getServer().getOnlinePlayers()) {
+		       rs = sqlite.readQuery("SELECT vanished FROM users WHERE username = '" + player.getName() + "'");
+		       boolean van = false;
+				try {
+					van = rs.getBoolean("vanished");
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+				if(van) {
+					p.hidePlayer(player);
+				}
+			}
 	}
 	@EventHandler
 	public void playerLogout(PlayerQuitEvent evt){
@@ -1621,20 +1628,26 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}	
 		} else if (cmd.getName().equalsIgnoreCase("vanish")){
 			if (p != null && p.hasPermission("MitaBase.vanish")) {
-				boolean van = true;
-				 for(Player player: getServer().getOnlinePlayers()) {
-				        if(!player.hasPermission("MitaBase.seevanished") && player.canSee(p)) {
-				           player.hidePlayer(p);
-				        } else if (!player.hasPermission("MitaBase.seevanished") && !player.canSee(p)) {
-				        	player.showPlayer(p);
-				        	van = false;
-				        }
-				 }
-				 if(van) {
-					 p.sendMessage(ChatColor.GREEN + "You have been vanished");
-				 } else {
-					 p.sendMessage(ChatColor.GREEN + "You have been unvanished");
-				 }
+				ResultSet rs = sqlite.readQuery("SELECT vanished FROM users WHERE username = '" + p.getName() + "'");
+				boolean van = false;
+				try {
+					van = rs.getBoolean("vanished");
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+				if(van){
+					for(Player player: getServer().getOnlinePlayers()) {
+				       player.showPlayer(p);				       
+					}
+					sqlite.modifyQuery("UPDATE users SET vanished = '0' WHERE username = '" + p.getName() + "'");
+					p.sendMessage(ChatColor.BLUE + "You've been unvanished");
+				} else {
+					for(Player player: getServer().getOnlinePlayers()) {
+					       if(!player.hasPermission("MitaBase.seevanished")) player.hidePlayer(p);
+					}
+					sqlite.modifyQuery("UPDATE users SET vanished = '1' WHERE username = '" + p.getName() + "'");
+					p.sendMessage(ChatColor.BLUE + "You've been vanished");
+				}
 			} else if (p == null) {
 				playerOnly(sender);
 				return true;
