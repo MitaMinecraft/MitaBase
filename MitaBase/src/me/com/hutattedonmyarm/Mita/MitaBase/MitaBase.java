@@ -23,6 +23,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.SimpleCommandMap;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -53,6 +54,9 @@ import org.bukkit.potion.PotionEffectType;
 
 import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.permission.*;
+import net.minecraft.server.MobEffect;
+import net.minecraft.server.MobEffectList;
+import net.minecraft.server.Packet41MobEffect;
 
 public class MitaBase extends JavaPlugin implements Listener {
 	private Logger logger = Bukkit.getServer().getLogger();
@@ -101,6 +105,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 		}
 		if(!sqlite.tableExists("mail")) {
 			String query = "CREATE TABLE mail (mailid INTEGER PRIMARY KEY, senderid INTEGER, receiverid INTEGER, message TEXT)";
+			sqlite.modifyQuery(query);
+		}
+		if(!sqlite.tableExists("bans")) {
+			String query = "CREATE TABLE bans (banid INTEGER PRIMARY KEY, playerid INTEGER, by INTEGER, reason TEXT, date TEXT)";
 			sqlite.modifyQuery(query);
 		}
 		
@@ -792,15 +800,38 @@ public class MitaBase extends JavaPlugin implements Listener {
 				if(opfer == null) {
 					sender.sendMessage("Player " + args[0] + "not found");
 				}
+				String reason = "";
+				long ticks = 0;
+				if(args.length > 1) {
+					try {
+						ticks = Long.parseLong(args[1]) * 20;
+						final String oname = opfer.getName();
+						for(int i = 2; i < args.length; i++) {
+							reason += args[i] + " ";
+						}
+						getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+
+							   public void run() {
+							       Bukkit.dispatchCommand(console, "ban " + oname);
+							   }
+						}, ticks);
+					} catch (Exception e) {
+						for(int i = 1; i < args.length; i++) {
+							reason += args[i] + " ";
+						}
+					}
+				}
 				opfer.setBanned(!opfer.isBanned());
-				if(opfer.isBanned()) sender.sendMessage(args[0] + ChatColor.RED + " has been banned");
-				if(!opfer.isBanned()) sender.sendMessage(args[0] + ChatColor.GREEN + " has been unbanned");
+				if(opfer.isBanned()) { 
+					sender.sendMessage(args[0] + ChatColor.RED + " has been banned");
+					sqlite.modifyQuery("INSERT INTO bans (by, playerid, reason, date) VALUES ((SELECT userid FROM users WHERE username = '" + sender.getName() +"'), (SELECT userid FROM users WHERE username = '" + opfer.getName() +"), '" + reason + "', '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "')");
+				}
+				if(!opfer.isBanned()) {
+					sender.sendMessage(args[0] + ChatColor.GREEN + " has been unbanned");
+					sqlite.modifyQuery("DELETE FROM bans WHERE playerid = (SELECT userid FROM users WHERE username = '" + opfer.getName() +") AND by = (SELECT userid FROM users WHERE username = '" + sender.getName() +"')");
+				}
 				if(opfer.isOnline()) { 
 					Player o = (Player) opfer;
-					String reason = "";
-					for(int i = 1; i < args.length; i++) {
-						reason += args[i] + " ";
-					}
 					o.kickPlayer(reason);
 				}
 			} else {
@@ -1041,7 +1072,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 						   public void run() {
 						       Bukkit.dispatchCommand(console, "unjail " + pname);
 						   }
-						}, ticks);
+					}, ticks);
 				}
 				sqlite.modifyQuery("UPDATE users SET jailed='1', jaileduntil='" + until + "' WHERE username='" + args[0] + "'");
 				p2.teleport(new Location(getServer().getWorld(world), x, y, z));
@@ -1444,6 +1475,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 					} else {
 						sender.sendMessage(ChatColor.RED + "World " + args[0] + " not found");
 					}
+					//MobEffect m = new MobEffect(14, 200);
+					//((CraftPlayer)p).getHandle().netServerHandler.sendPacket(new Packet41MobEffect(8, m));
 				} else {
 					noPermission(sender, cmd, args);
 				}
