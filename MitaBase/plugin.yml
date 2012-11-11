@@ -27,7 +27,7 @@ commands:
     permission: MitaBase.deljail
   delwarp:
     description: Deletes warp <warp>
-    usage: /delwaro <warp>
+    usage: /delwarp <warp>
     permission: MitaBase.delwarp
   enderchest:
     description: Lets you peak in other players' enderchests
@@ -48,11 +48,6 @@ commands:
     usage: /give [player] <item> [amount]
     aliases: [i, item]
     permission: MitaBase.give
-  groupmessage:
-    description: Sends a message to all the given players
-    usage: /<command> <player1> [<player2> <player3> ...] message <message>
-    permission: MitaBase.groupmsg
-    aliases: [groupmsg, gmsg]
   heal:
     description: Heals the player
     usage: /heal [player]
@@ -98,6 +93,10 @@ commands:
     description: Mutes a player
     usage: /mute <player>
     permission: MitaBase.mute
+  nick:
+    description: Changes your/another player's nick
+    usage: /nick [player] <nick>
+    permission: MitaBase.nick.self
   pvp:
     description: Turns your PVP on or off
     usage: /pvp <1|0|on|off>
@@ -212,6 +211,7 @@ permissions:
             MitaBase.toggleMobDamage: true
             MitaBase.banreason: true
             MitaBase.socialspy: true
+            MitaBase.nick.others: true
     MitaBase.mod.*:
         description: Gives access to all mod-commands from MitaBase
         children:
@@ -240,6 +240,7 @@ permissions:
             MitaBase.warnings.list.others: true
             MitaBase.warnings.issue: true
             MitaBase.coloredchat: true
+            MitaBase.nick.self: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:

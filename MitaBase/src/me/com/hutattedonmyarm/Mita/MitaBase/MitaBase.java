@@ -71,7 +71,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -391,11 +391,11 @@ public class MitaBase extends JavaPlugin implements Listener {
 	@EventHandler
 	public void playerJoin(PlayerJoinEvent evt) {
 		Player p = evt.getPlayer();
-		ResultSet rs = sqlite.readQuery("SELECT userid FROM users WHERE username = '" + p.getName() + "'");
+		ResultSet rs = sqlite.readQuery("SELECT userid, nick FROM users WHERE username = '" + p.getName() + "'");
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
-				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0)");
+				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy, nick) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0, '')");
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
 				try {
@@ -409,6 +409,11 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}
 				}
 				Bukkit.getServer().broadcastMessage(mc + getConfig().getString("new_user.welcome_message").replace("{username}", uc + p.getName() + mc));
+			} else {
+				String nick = rs.getString("nick");
+				if(!nick.equals("")) {
+					p.setDisplayName(colorize(nick));
+				}	
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -922,8 +927,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 				}
 			} else if (args.length < 1) {
 				return false;
-			}
-			
+			}	
 		} else if(cmd.getName().equalsIgnoreCase("give")) {
 			give(sender, args, cmd);
 		} else if(cmd.getName().equalsIgnoreCase("groupmessage")) {
@@ -1307,6 +1311,53 @@ public class MitaBase extends JavaPlugin implements Listener {
 				}
 			} else {
 				noPermission(sender, cmd, args);
+			}
+		} else if (cmd.getName().equalsIgnoreCase("nick")){
+			if(args.length == 0) {
+				if(p != null && p.hasPermission("MitaBase.nick.self")) {
+					p.setDisplayName(p.getName());
+					sqlite.modifyQuery("UPDATE users SET nick = '' WHERE username = '" + p.getName()+ "'");
+					p.sendMessage(ChatColor.BLUE + "Your nick is now cleared");
+				} else if(p == null) {
+					playerOnly(sender);
+				} else {
+					noPermission(sender, cmd, args);
+				}	
+			} else if(args.length == 1) {
+				if(p != null && p.hasPermission("MitaBase.nick.self")) {
+					p.setDisplayName(colorize(args[0]));
+					sqlite.modifyQuery("UPDATE users SET nick = '" + colorize(args[0]) + "' WHERE username = '" + p.getName()+ "'");
+					p.sendMessage(ChatColor.BLUE + "Your nick is now " + colorize(args[0]));
+				} else if(p == null) {
+					//playerOnly(sender);
+					Player pl = getServer().getPlayer(args[0]);
+					if(pl != null) {
+						pl.setDisplayName(pl.getName());
+						sqlite.modifyQuery("UPDATE users SET nick = '' WHERE username = '" + pl.getName()+ "'");
+						pl.sendMessage(ChatColor.BLUE + "Your nick is now cleared");
+						sender.sendMessage(ChatColor.BLUE + "Successfully cleared nick of " + pl.getName());
+					} else {
+						sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					}
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else if(args.length == 2) {
+				if(p == null || p.hasPermission("MitaBase.nick.others")) {
+					Player pl = getServer().getPlayer(args[0]);
+					if(pl != null) {
+						pl.setDisplayName(colorize(args[1]));
+						sqlite.modifyQuery("UPDATE users SET nick = '" + colorize(args[1]) + "' WHERE username = '" + pl.getName()+ "'");
+						pl.sendMessage(ChatColor.BLUE + "Your nick is now " + colorize(args[0]));
+						sender.sendMessage(ChatColor.BLUE + "Successfully changed nick of " + pl.getName() + " to " +  colorize(args[1]));
+					}else {
+						sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+					}
+				} else {
+					noPermission(sender, cmd, args);
+				}
+			} else {
+				return false;
 			}
 		} else if (cmd.getName().equalsIgnoreCase("pvp")){
 			if(p != null && p.hasPermission("MitaBase.pvp")) {

@@ -1,5 +1,19 @@
 see github!
 
+GM in plugin.yml as soon as it gets enabled! -> V1.1
+  groupmessage:
+    description: Sends a message to all the given players
+    usage: /<command> <player1> [<player2> <player3> ...] message <message>
+    permission: MitaBase.groupmsg
+    aliases: [groupmsg, gmsg]
+    
+plan for groupmessage replies:
+exclude console!
+save sender and date in database to each receiver
+reply: replies to sender. -> counts as regular private message!
+	if sender: to every receiver who got last messaged by sender and date is the latest.
+ replyall: replies to everybody, where the date &sender are the same (+ the sender). 
+ 	if sender: same as reply
 
 todo:
-test msg, test mail, test colored chat, test vanish
+test msg, test mail, test vanish, test groupmessages
