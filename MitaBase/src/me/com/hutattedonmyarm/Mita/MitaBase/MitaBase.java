@@ -109,6 +109,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 			String query = "CREATE TABLE bans (banid INTEGER PRIMARY KEY, playerid INTEGER, by INTEGER, reason TEXT, date TEXT)";
 			sqlite.modifyQuery(query);
 		}
+		if(!sqlite.tableExists("tpa")) {
+			String query = "CREATE TABLE tpa (tpaid INTEGER PRIMARY KEY, senderid INTEGER, receiverid INTEGER)";
+			sqlite.modifyQuery(query);
+		}
 		
 	}
 	private boolean setupPermissions()
@@ -712,9 +716,11 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}
 			console.sendMessage(pluginPrefix + sender.getName() + " wrote command: " + cmd.getName() + argString);
 		}		
-		Player p = null;
+		final Player p;
 		if(sender instanceof Player) {
 			p = (Player) sender;
+		} else {
+			p = null;
 		}
 		if(cmd.getName().equalsIgnoreCase("afk")) {
 			if(p != null) {
@@ -1663,6 +1669,67 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else {
 				sender.sendMessage(ChatColor.RED + "Too many arguments");
 				return false;
+			}
+		} else if (cmd.getName().equalsIgnoreCase("tpa")){
+			if(p != null && p.hasPermission("MitaBase.tpa.tpa")) {
+				if(args.length != 1) return false;
+				final Player pl = getServer().getPlayer(args[0]);
+				if(pl == null) {
+					sender.sendMessage(ChatColor.RED + "Player" + args[0] + " not found");
+					return true;
+				}
+				sqlite.modifyQuery("INSERT INTO tpa (senderid, receiverid) VALUES ((SELECT userid FROM users WHERE username = '" + p.getName() + "'), (SELECT userid FROM users WHERE username = '" + args[0] + "'))");
+				pl.sendMessage(ChatColor.BLUE + p.getDisplayName() + " has sent you a request to teleport you to them. Type /tpaccept to accept and /tpdeny to deny");
+				p.sendMessage(ChatColor.BLACK + "Request sent to " + pl.getDisplayName());
+				Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+					@Override
+					public void run() {
+						sqlite.modifyQuery("DELETE FROM tpa WHERE senderid = (SELECT userid FROM users WHERE username = '" + p.getName() + "') AND receiverid = SELECT userid FROM users WHERE username = '" + pl.getName() + "')");
+					}
+				}, 6000L);
+			} else if(p == null) {
+				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		} else if (cmd.getName().equalsIgnoreCase("tpaccept")){
+			if(p != null && p.hasPermission("MitaBase.tpa.tpaccept")) {
+				ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS howmany, tpaid, username FROM tpa, users WHERE receiverid = (SELECT userid FROM users WHERE username = '" + p.getName() + "') AND senderid = userid GROUP BY tpaid");
+				try {
+					int h = rs.getInt("howmany");
+					if(h == 0) {
+						p.sendMessage(ChatColor.BLUE + "You don't have any open tpa-requests");
+					} else if (h == 1) {
+						Player pl = getServer().getPlayer(rs.getString("username"));
+						if(pl != null) {
+							p.teleport(pl);
+						} else {
+							p.sendMessage(ChatColor.RED + "Player " + rs.getString("username") + " not found");
+						}
+					} else {
+						p.sendMessage(ChatColor.BLUE + "You've got multiple tpa-requests. Please type /tpaccept <id>");
+						while(rs.next()) {
+							Player pl = getServer().getPlayer(rs.getString("username"));
+							if(pl != null) {
+								p.sendMessage(ChatColor.BLUE + "ID: " + rs.getInt("tpaid") + " from " + pl.getDisplayName());
+							}
+						}
+					}
+				} catch (Exception e) {
+					p.sendMessage(ChatColor.BLUE + "You don't have any open tpa-requests");
+				}
+			} else if(p == null) {
+				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		} else if (cmd.getName().equalsIgnoreCase("tpadeny")){
+			if(p != null && p.hasPermission("MitaBase.tpa.tpdeny")) {
+				
+			} else if(p == null) {
+				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
 			}
 		} else if (cmd.getName().equalsIgnoreCase("warp")){
 			if (args.length == 0){

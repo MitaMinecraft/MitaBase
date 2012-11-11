@@ -155,6 +155,18 @@ commands:
     description: Teleports you/player1 to player2
     usage: /tp [player1] <player2>
     permission: MitaBase.tp
+  tpa:
+    description: Sends a teleport-request to a player
+    usage: /tpa <player>
+    permission: MitaBase.tpa.tpa
+  tpaccept:
+    description: Accepts a teleport-request
+    usage: /tpaccept [id]
+    permission: MitaBase.tpa.tpaccept
+  tpdeny: 
+    description: Denies a teleport-request
+    usage: /tpdeny [id]
+    permission: MitaBase.tpa.tpdeny
   unjail:
     description: Jails the player <player> into the jail <jailname>
     usage: /unjail
@@ -258,3 +270,6 @@ permissions:
             MitaBase.msg: true
             MitaBase.mail: true
             MitaBase.groupmsg: true
+            MitaBase.tpa.tpa: true
+            MitaBase.tpa.tpaccept: true
+            MitaBase.tpa.tpdeny: true

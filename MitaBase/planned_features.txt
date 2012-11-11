@@ -15,5 +15,15 @@ reply: replies to sender. -> counts as regular private message!
  replyall: replies to everybody, where the date &sender are the same (+ the sender). 
  	if sender: same as reply
 
+
+tpa:
+request: entry in DB, message to player. auto-delete after 5min
+tpaccept:
+	1: teleport, delete request
+	>1: list requests (with ID), /tpaccept <id> teleport, delete
+tpdeny:
+	1: delete
+	>1: list requests (with ID), /tpdeny <id>, delete
+
 todo:
 test groupmessages
