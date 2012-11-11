@@ -126,6 +126,10 @@ commands:
     description: Sets the spawn of the current world at the players location
     usage: /setwspawn
     permission: MitaBase.setwspawn
+  socialspy:
+    description: Lets you see every PM/commnd from other players
+    usage: /socialspy <1|0|on|off>
+    permission: MitaBase.socialspy
   spawn:
     description: Teleports the player to the spawn of the server
     usage: /spawn
@@ -202,6 +206,7 @@ permissions:
             MitaBase.setTime: true
             MitaBase.toggleMobDamage: true
             MitaBase.banreason: true
+            MitaBase.socialspy: true
     MitaBase.mod.*:
         description: Gives access to all mod-commands from MitaBase
         children:

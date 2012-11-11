@@ -71,7 +71,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -118,7 +118,9 @@ public class MitaBase extends JavaPlugin implements Listener {
     }
 	private boolean setupChat() {
         RegisteredServiceProvider<Chat> rsp = getServer().getServicesManager().getRegistration(Chat.class);
-        chat = rsp.getProvider();
+        if(rsp != null) {
+        	chat = rsp.getProvider();
+        }
         return chat != null;
     }
 	private void loadStuff() {
@@ -393,7 +395,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
-				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0)");
+				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0)");
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
 				try {
@@ -411,7 +413,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		String group = permission.getPrimaryGroup(p);
+		/*String group = permission.getPrimaryGroup(p);
 		console.sendMessage("group: " + group);
 		String color = colorize("&f");
 		try {
@@ -428,7 +430,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			console.sendMessage("playercolor: " + getConfig().getString("colors.players." + p.getName()));
 		} catch (Exception e) {
 		}
-		p.setPlayerListName(color + p.getName());
+		p.setPlayerListName(color + p.getName());*/
 		for(Player player: getServer().getOnlinePlayers()) {
 		       rs = sqlite.readQuery("SELECT vanished FROM users WHERE username = '" + player.getName() + "'");
 		       boolean van = false;
@@ -451,11 +453,21 @@ public class MitaBase extends JavaPlugin implements Listener {
 		if(cmdlogger) {
 			console.sendMessage(ChatColor.GRAY + "Player " + evt.getPlayer().getName() + " entered command: " + evt.getMessage());
 		}
+		for(Player player : getServer().getOnlinePlayers()) {
+			ResultSet rs = sqlite.readQuery("SELECT socialspy FROM users WHERE username = '" + player.getName() + "'");
+			try {
+				if(rs.getBoolean("socialspy") && player.hasPermission("MitaBase.socialspy")) {
+					player.sendMessage(ChatColor.GRAY + evt.getPlayer().getName() + " entered command: " + evt.getMessage());
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 		List<String> commands = getConfig().getStringList("allowed_commands_in_jail");
 		String m = evt.getMessage().substring(1, evt.getMessage().length()).split(" ")[0];
-		String cmd = getServer().getPluginCommand(m).getName();
-		//if (cmd != null) evt.setCancelled(preventPlayerFromBreakingOut(evt.getPlayer()) && !commands.contains(cmd));
-		//if (cmd == null) evt.setCancelled(preventPlayerFromBreakingOut(evt.getPlayer()));
+		Command co = getServer().getPluginCommand(m);
+		String cmd = null;
+		if(co != null)cmd = co.getName();
 		if(cmd != null && !commands.contains(cmd) && preventPlayerFromBreakingOut(evt.getPlayer())) {
 			evt.setCancelled(true);
 		}
@@ -934,24 +946,30 @@ public class MitaBase extends JavaPlugin implements Listener {
 				}
 			}
 		} else if(cmd.getName().equalsIgnoreCase("home")) {
-			String hname = "";
-			if(args.length > 0) hname = args[0];
-			ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS numHomesWithThatName FROM users, homes WHERE users.username = '" + p.getName() + "' AND homes.homename = '" + hname + "' AND users.userid = homes.userid");
-			int count = 0;
-			try {
-				count = rs.getInt("numHomesWithThatName");
-			} catch (Exception e) {
-				
-			}
-			if(count == 0) {
-				p.sendMessage(ChatColor.RED + "No home with that name found");
-			} else {
-				rs = sqlite.readQuery("SELECT locX, locY, locZ, world FROM users, homes WHERE users.username = '" + p.getName() + "' AND homes.homename = '" + hname + "' AND users.userid = homes.userid");
+			if(p != null && p.hasPermission("MitaBase.home")) {
+				String hname = "";
+				if(args.length > 0) hname = args[0];
+				ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS numHomesWithThatName FROM users, homes WHERE users.username = '" + p.getName() + "' AND homes.homename = '" + hname + "' AND users.userid = homes.userid");
+				int count = 0;
 				try {
-					p.teleport(new Location(Bukkit.getServer().getWorld(rs.getString("world")), rs.getDouble("locX"), rs.getDouble("locY"), rs.getDouble("locZ")));
+					count = rs.getInt("numHomesWithThatName");
 				} catch (Exception e) {
-					e.printStackTrace();
+					
 				}
+				if(count == 0) {
+					p.sendMessage(ChatColor.RED + "No home with that name found");
+				} else {
+					rs = sqlite.readQuery("SELECT locX, locY, locZ, world FROM users, homes WHERE users.username = '" + p.getName() + "' AND homes.homename = '" + hname + "' AND users.userid = homes.userid");
+					try {
+						p.teleport(new Location(Bukkit.getServer().getWorld(rs.getString("world")), rs.getDouble("locX"), rs.getDouble("locY"), rs.getDouble("locZ")));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			} else if (p == null) {
+				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
 			}
 		} else if(cmd.getName().equalsIgnoreCase("invsee")) {
 			if (p != null && p.hasPermission("MitaBase.invsee.see")) {
@@ -1378,7 +1396,35 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}else {
 				p.teleport(new Location(Bukkit.getServer().getWorld(getConfig().getString("spawn.world")), getConfig().getDouble("spawn.x"), getConfig().getDouble("spawn.y"), getConfig().getDouble("spawn.z")));
 			}
-		
+		} else if(cmd.getName().equalsIgnoreCase("socialspy")) {
+			if(p != null && p.hasPermission("MitaBase.socialspy")) {
+				if(args.length < 1) return false;
+				int sosp = 2;
+				try {
+					sosp = Integer.parseInt(args[0]);
+				} catch (Exception e) {
+					if (args[0].equalsIgnoreCase("on")) {
+						sosp = 1;
+						
+					} else if (args[0].equalsIgnoreCase("off")) {
+						sosp = 0;
+					
+					}
+				}
+				if (sosp == 1) {
+					p.sendMessage(ChatColor.BLUE + "Socialspy is now on");
+				} else if (sosp == 0) {
+					p.sendMessage(ChatColor.BLUE + "Socialspy is now off");
+				} else {
+					return false;
+				}
+				sqlite.modifyQuery("UPDATE users SET socialspy = '" + sosp + "'");
+			} else if (p == null) {
+				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
+			}
+			
 		} else if(cmd.getName().equalsIgnoreCase("sudo")) {
 			if(p == null || p.hasPermission("MitaBase.sudo")) {
 				if(args.length < 2) {
