@@ -16,4 +16,4 @@ reply: replies to sender. -> counts as regular private message!
  	if sender: same as reply
 
 todo:
-test msg, test mail, test vanish, test groupmessages
+test groupmessages

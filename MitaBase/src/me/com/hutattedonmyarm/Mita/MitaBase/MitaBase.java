@@ -23,6 +23,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.SimpleCommandMap;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -52,6 +53,8 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.permission.*;
+import net.minecraft.server.MobEffect;
+import net.minecraft.server.Packet41MobEffect;
 
 public class MitaBase extends JavaPlugin implements Listener {
 	private Logger logger = Bukkit.getServer().getLogger();
@@ -408,7 +411,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 						console.sendMessage(pluginPrefix + ChatColor.RED + "Invalid color in config in section \"new_user\", using default!");
 					}
 				}
-				Bukkit.getServer().broadcastMessage(mc + getConfig().getString("new_user.welcome_message").replace("{username}", uc + p.getName() + mc));
+				Bukkit.getServer().broadcastMessage(mc + getConfig().getString("new_user.welcome_message").replace("{username}", uc + p.getDisplayName() + mc));
 			} else {
 				String nick = rs.getString("nick");
 				if(!nick.equals("")) {
@@ -725,8 +728,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 				}
 				if(!afk) afkInt = 1;
 				sqlite.modifyQuery("UPDATE users SET afk="+afkInt+" WHERE username = '" + p.getName() + "'");
-				if(!afk) Bukkit.getServer().broadcastMessage(ChatColor.DARK_AQUA +  p.getName() + " is now afk");
-				if(afk) Bukkit.getServer().broadcastMessage(ChatColor.DARK_AQUA +  p.getName() + " is no longer afk");
+				if(!afk) Bukkit.getServer().broadcastMessage(ChatColor.DARK_AQUA +  p.getDisplayName() + " is now afk");
+				if(afk) Bukkit.getServer().broadcastMessage(ChatColor.DARK_AQUA +  p.getDisplayName() + " is no longer afk");
 			} else {
 				playerOnly(sender);
 			}
@@ -1305,8 +1308,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 					sender.sendMessage(ChatColor.GRAY + "[" + sender.getName() + " -> Console] " + ChatColor.RESET + msg);
 					sqlite.modifyQuery("UPDATE users SET last_messaged = '0' WHERE username = '" + sender.getName() + "'");
 				} else {
-					partner.sendMessage(ChatColor.GRAY + "[" +  sender.getName() + " -> " + partner.getName() + "] " + ChatColor.RESET + msg);
-					sender.sendMessage(ChatColor.GRAY + "[" +  sender.getName() + " -> " + partner.getName() + "] " + ChatColor.RESET + msg);
+					partner.sendMessage(ChatColor.GRAY + "[" +  sender.getName() + " -> " + partner.getDisplayName() + "] " + ChatColor.RESET + msg);
+					sender.sendMessage(ChatColor.GRAY + "[" +  sender.getName() + " -> " + partner.getDisplayName() + "] " + ChatColor.RESET + msg);
 					sqlite.modifyQuery("UPDATE users SET last_messaged = (SELECT userid FROM users WHERE username = '" + partner.getName() + "') WHERE username = '" + sender.getName() + "'");
 				}
 			} else {
@@ -1324,21 +1327,20 @@ public class MitaBase extends JavaPlugin implements Listener {
 					noPermission(sender, cmd, args);
 				}	
 			} else if(args.length == 1) {
-				if(p != null && p.hasPermission("MitaBase.nick.self")) {
+				Player pl = getServer().getPlayer(args[0]);
+				if(pl != null && (p == null || p.hasPermission("MitaBase.nick.others"))) {
+					pl.setDisplayName(pl.getName());
+					sqlite.modifyQuery("UPDATE users SET nick = '' WHERE username = '" + pl.getName()+ "'");
+					pl.sendMessage(ChatColor.BLUE + "Your nick is now cleared");
+					sender.sendMessage(ChatColor.BLUE + "Successfully cleared nick of " + pl.getName());
+				} else if(pl == null && p != null && p.hasPermission("MitaBase.nick.self")) {
 					p.setDisplayName(colorize(args[0]));
 					sqlite.modifyQuery("UPDATE users SET nick = '" + colorize(args[0]) + "' WHERE username = '" + p.getName()+ "'");
 					p.sendMessage(ChatColor.BLUE + "Your nick is now " + colorize(args[0]));
-				} else if(p == null) {
-					//playerOnly(sender);
-					Player pl = getServer().getPlayer(args[0]);
-					if(pl != null) {
-						pl.setDisplayName(pl.getName());
-						sqlite.modifyQuery("UPDATE users SET nick = '' WHERE username = '" + pl.getName()+ "'");
-						pl.sendMessage(ChatColor.BLUE + "Your nick is now cleared");
-						sender.sendMessage(ChatColor.BLUE + "Successfully cleared nick of " + pl.getName());
-					} else {
-						sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
-					}
+				} else if(pl == null) {
+					sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
+				} else if(pl != null && p != null && !p.hasPermission("MitaBase.nick.others")) {
+					noPermission(sender, cmd, args);
 				} else {
 					noPermission(sender, cmd, args);
 				}
@@ -1348,7 +1350,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 					if(pl != null) {
 						pl.setDisplayName(colorize(args[1]));
 						sqlite.modifyQuery("UPDATE users SET nick = '" + colorize(args[1]) + "' WHERE username = '" + pl.getName()+ "'");
-						pl.sendMessage(ChatColor.BLUE + "Your nick is now " + colorize(args[0]));
+						pl.sendMessage(ChatColor.BLUE + "Your nick is now " + colorize(args[1]));
 						sender.sendMessage(ChatColor.BLUE + "Successfully changed nick of " + pl.getName() + " to " +  colorize(args[1]));
 					}else {
 						sender.sendMessage(ChatColor.RED + "Player " + args[0] + " not found");
@@ -1527,6 +1529,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 			if(args.length == 0) {
 				if(p != null && p.hasPermission("MitaBase.time")) {
 					p.sendMessage(ChatColor.BLUE + "Time in world " + p.getWorld().getName() + " is " + p.getWorld().getTime() + " ticks");
+					MobEffect m = new MobEffect(14, 200);
+					((CraftPlayer)p).getHandle().netServerHandler.sendPacket(new Packet41MobEffect(getServer().getPlayer("mx44").getEntityId(), m));
 				} else if (p == null) {
 					playerOnly(sender);
 					return true;
@@ -1541,8 +1545,6 @@ public class MitaBase extends JavaPlugin implements Listener {
 					} else {
 						sender.sendMessage(ChatColor.RED + "World " + args[0] + " not found");
 					}
-					//MobEffect m = new MobEffect(14, 200);
-					//((CraftPlayer)p).getHandle().netServerHandler.sendPacket(new Packet41MobEffect(8, m));
 				} else {
 					noPermission(sender, cmd, args);
 				}
