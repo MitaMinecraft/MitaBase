@@ -926,6 +926,28 @@ public class MitaBase extends JavaPlugin implements Listener {
 			
 		} else if(cmd.getName().equalsIgnoreCase("give")) {
 			give(sender, args, cmd);
+		} else if(cmd.getName().equalsIgnoreCase("groupmessage")) {
+			if(p == null || p.hasPermission("MitaBase.groupmsg")) {
+				if(args.length < 3) return false;
+				String a = "";
+				for(int i = 0; i < args.length; i++) {
+					a += args[i] + " ";
+				}
+				a = a.substring(0, a.length()-1);
+				if(!a.contains("message")) return false;
+				String[] param = a.split("message", 2);
+				String[] players = param[0].split(" ");
+				String message = param[1];
+				for(String playername : players) {
+					Player plr = Bukkit.getPlayer(playername);
+					if(plr == null)  {
+						sender.sendMessage(ChatColor.RED + "Player " + playername + " not found. The message was sent to the others only");
+					}
+					plr.sendMessage(ChatColor.GRAY + "Groupmessage: [" + p.getDisplayName() + " -> me] " + message);
+				}
+			} else {
+				noPermission(sender, cmd, args);
+			}
 		} else if(cmd.getName().equalsIgnoreCase("heal")) {
 			if(args.length >= 1) {
 				if(p == null || p.hasPermission("MitaBase.heal")) {

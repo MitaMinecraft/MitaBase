@@ -48,6 +48,11 @@ commands:
     usage: /give [player] <item> [amount]
     aliases: [i, item]
     permission: MitaBase.give
+  groupmessage:
+    description: Sends a message to all the given players
+    usage: /<command> <player1> [<player2> <player3> ...] message <message>
+    permission: MitaBase.groupmsg
+    aliases: [groupmsg, gmsg]
   heal:
     description: Heals the player
     usage: /heal [player]
@@ -136,7 +141,7 @@ commands:
     permission: MitaBase.spawn
   sudo:
     description: Forces another player to execute a command
-    usage: /sudo <player> <command>
+    usage: /sudo <player> <cmd>
     permission: MitaBase.sudo
   time:
     description: Shows, or sets the time
@@ -251,3 +256,4 @@ permissions:
             MitaBase.pvp: true
             MitaBase.msg: true
             MitaBase.mail: true
+            MitaBase.groupmsg: true
