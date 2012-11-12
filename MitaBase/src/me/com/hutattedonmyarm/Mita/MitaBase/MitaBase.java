@@ -1694,29 +1694,62 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}
 		} else if (cmd.getName().equalsIgnoreCase("tpaccept")){
 			if(p != null && p.hasPermission("MitaBase.tpa.tpaccept")) {
-				ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS howmany, tpaid, username FROM tpa, users WHERE receiverid = (SELECT userid FROM users WHERE username = '" + p.getName() + "') AND senderid = userid GROUP BY tpaid");
-				try {
-					int h = rs.getInt("howmany");
-					if(h == 0) {
+				if(args.length == 0) {
+					ResultSet rs = sqlite.readQuery("SELECT tpaid, username FROM tpa, users WHERE receiverid = (SELECT userid FROM users WHERE username = '" + p.getName() + "') AND senderid = userid");
+					int h = 0;
+					try {
+						while(rs.next()) { h++; }
+					} catch (Exception e) {
+					}
+					rs = sqlite.readQuery("SELECT tpaid, username FROM tpa, users WHERE receiverid = (SELECT userid FROM users WHERE username = '" + p.getName() + "') AND senderid = userid");
+					try {
+						if(h == 0) {
+							p.sendMessage(ChatColor.BLUE + "You don't have any open tpa-requests");
+						} else if (h == 1) {
+							Player pl = getServer().getPlayer(rs.getString("username"));
+							if(pl != null) {
+								p.teleport(pl);
+								sqlite.modifyQuery("DELETE FROM tpa WHERE tpaid = '" + rs.getInt("tpaid") + "'");
+							} else {
+								p.sendMessage(ChatColor.RED + "Player " + rs.getString("username") + " not found");
+							}
+						} else {
+							p.sendMessage(ChatColor.BLUE + "You've got multiple tpa-requests. Please type /tpaccept <id>");
+							while(rs.next()) {
+								Player pl = getServer().getPlayer(rs.getString("username"));
+								if(pl != null) {
+									p.sendMessage(ChatColor.BLUE + "ID: " + rs.getInt("tpaid") + " from " + pl.getDisplayName());
+								}
+							}
+						}
+					} catch (Exception e) {
 						p.sendMessage(ChatColor.BLUE + "You don't have any open tpa-requests");
-					} else if (h == 1) {
+						e.printStackTrace();
+					}
+				} else if(args.length == 1) {
+					int tpaid = -1;
+					try {
+						tpaid = Integer.parseInt(args[0]);
+					} catch (Exception e) {
+						p.sendMessage(ChatColor.RED + "Invail ID: " + args[0]);
+						return true;
+					}
+					ResultSet rs = sqlite.readQuery("SELECT username FROM users, tpa WHERE tpaid = '" + tpaid + "' AND receiverid = (SELECT userid FROM users WHERE username = '" + p.getName() + "') AND senderid = userid");
+					try {
 						Player pl = getServer().getPlayer(rs.getString("username"));
 						if(pl != null) {
 							p.teleport(pl);
+							sqlite.modifyQuery("DELETE FROM tpa WHERE tpaid = '" + tpaid + "'");
 						} else {
 							p.sendMessage(ChatColor.RED + "Player " + rs.getString("username") + " not found");
+							return true;
 						}
-					} else {
-						p.sendMessage(ChatColor.BLUE + "You've got multiple tpa-requests. Please type /tpaccept <id>");
-						while(rs.next()) {
-							Player pl = getServer().getPlayer(rs.getString("username"));
-							if(pl != null) {
-								p.sendMessage(ChatColor.BLUE + "ID: " + rs.getInt("tpaid") + " from " + pl.getDisplayName());
-							}
-						}
+					} catch (Exception e) {
+						p.sendMessage(ChatColor.RED + "This request cannot be found");
+						return true;
 					}
-				} catch (Exception e) {
-					p.sendMessage(ChatColor.BLUE + "You don't have any open tpa-requests");
+				} else {
+					return false;
 				}
 			} else if(p == null) {
 				playerOnly(sender);
@@ -1725,7 +1758,62 @@ public class MitaBase extends JavaPlugin implements Listener {
 			}
 		} else if (cmd.getName().equalsIgnoreCase("tpadeny")){
 			if(p != null && p.hasPermission("MitaBase.tpa.tpdeny")) {
-				
+				if(args.length == 0) {
+					ResultSet rs = sqlite.readQuery("SELECT receiverid, senderid, tpaid, username FROM tpa, users WHERE receiverid = (SELECT userid FROM users WHERE username = '" + p.getName() + "') AND senderid = userid");
+					int h = 0;
+					try {
+						while(rs.next()) { h++; }
+					} catch (Exception e) {
+					}
+					rs = sqlite.readQuery("SELECT receiverid, senderid, tpaid, username FROM tpa, users WHERE receiverid = (SELECT userid FROM users WHERE username = '" + p.getName() + "') AND senderid = userid");
+					try {
+						if(h == 0) {
+							p.sendMessage(ChatColor.BLUE + "You don't have any open tpa-requests");
+						} else if (h == 1) {
+							try {
+								getServer().getPlayer(rs.getString("username")).sendMessage(ChatColor.BLUE + p.getDisplayName() + " has denied your request");
+							} catch (Exception e)  {
+							}
+							sqlite.modifyQuery("DELETE FROM tpa WHERE senderid = '" + rs.getInt("senderid") + "' AND receiverid = '" + rs.getInt("receiverid") + "'");
+						} else {
+							p.sendMessage(ChatColor.BLUE + "You've got multiple tpa-requests. Please type /tpadeny <id>");
+							while(rs.next()) {
+								Player pl = getServer().getPlayer(rs.getString("username"));
+								if(pl != null) {
+									p.sendMessage(ChatColor.BLUE + "ID: " + rs.getInt("tpaid") + " from " + pl.getDisplayName());
+								} else {
+									p.sendMessage(ChatColor.BLUE + "ID: " + rs.getInt("tpaid") + " from " + rs.getString("username"));
+								}
+							}
+						}
+					} catch (Exception e) {
+						p.sendMessage(ChatColor.BLUE + "You don't have any open tpa-requests");
+					}
+				} else if(args.length == 1) {
+					int tpaid = -1;
+					try {
+						tpaid = Integer.parseInt(args[0]);
+					} catch (Exception e) {
+						p.sendMessage(ChatColor.RED + "Invail ID: " + args[0]);
+						return true;
+					}
+					ResultSet rs = sqlite.readQuery("SELECT username FROM users, tpa WHERE tpaid = '" + tpaid + "' AND receiverid = (SELECT userid FROM users WHERE username = '" + p.getName() + "') AND senderid = userid");
+					try {
+						Player pl = getServer().getPlayer(rs.getString("username"));
+						if(pl != null) {
+							pl.sendMessage(ChatColor.BLUE + p.getDisplayName() + " has denied your request");
+							sqlite.modifyQuery("DELETE FROM tpa WHERE tpaid = '" + tpaid + "'");
+						} else {
+							p.sendMessage(ChatColor.RED + "Player " + rs.getString("username") + " not found");
+							return true;
+						}
+					} catch (Exception e) {
+						p.sendMessage(ChatColor.RED + "This request cannot be found");
+						return true;
+					}
+				} else {
+					
+				}
 			} else if(p == null) {
 				playerOnly(sender);
 			} else {
