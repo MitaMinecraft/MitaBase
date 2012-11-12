@@ -110,6 +110,10 @@ commands:
     usage: /<command> <message>
     permission: MitaBase.msg
     aliases: r
+  seen:
+    description: Shows the last time a player was online
+    usage: /seen <player>
+    permission: MitaBase.seen
   sethome:
     description: Sets the homepoint of the player at the players location
     usage: /sethome [homename]
@@ -224,6 +228,7 @@ permissions:
             MitaBase.banreason: true
             MitaBase.socialspy: true
             MitaBase.nick.others: true
+            MitaBase.seen: true
     MitaBase.mod.*:
         description: Gives access to all mod-commands from MitaBase
         children:

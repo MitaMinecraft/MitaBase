@@ -44,6 +44,7 @@ import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.ItemStack;
@@ -74,7 +75,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT, last_seen TEXT)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -396,9 +397,23 @@ public class MitaBase extends JavaPlugin implements Listener {
 		sqlite.close();
 	}
 	@EventHandler
+	public void playerLogin(PlayerLoginEvent evt) {
+		Player p = evt.getPlayer();
+		ResultSet rs = sqlite.readQuery("SELECT nick FROM users WHERE username = '" + p.getName() + "'");
+		try {
+			String nick = rs.getString("nick");
+			if(!nick.equals("")) {
+				p.setDisplayName(colorize(nick));
+			}	
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		sqlite.modifyQuery("UPDATE users SET last_seen = '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "' WHERE username = '" + p.getName() + "'");
+	}
+	@EventHandler
 	public void playerJoin(PlayerJoinEvent evt) {
 		Player p = evt.getPlayer();
-		ResultSet rs = sqlite.readQuery("SELECT userid, nick FROM users WHERE username = '" + p.getName() + "'");
+		ResultSet rs = sqlite.readQuery("SELECT userid FROM users WHERE username = '" + p.getName() + "'");
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
@@ -416,33 +431,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 					}
 				}
 				Bukkit.getServer().broadcastMessage(mc + getConfig().getString("new_user.welcome_message").replace("{username}", uc + p.getDisplayName() + mc));
-			} else {
-				String nick = rs.getString("nick");
-				if(!nick.equals("")) {
-					p.setDisplayName(colorize(nick));
-				}	
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		/*String group = permission.getPrimaryGroup(p);
-		console.sendMessage("group: " + group);
-		String color = colorize("&f");
-		try {
-			color = colorize(chat.getPlayerPrefix(p));
-		} catch (Exception e) {
-		}	
-		try {
-			color = colorize(getConfig().getString("colors.groups." + group));
-			console.sendMessage("groupcolor: " + getConfig().getString("colors.groups." + group));
-		} catch (Exception e) {
-		}
-		try {
-			color = colorize(getConfig().getString("colors.players." + p.getName()));
-			console.sendMessage("playercolor: " + getConfig().getString("colors.players." + p.getName()));
-		} catch (Exception e) {
-		}
-		p.setPlayerListName(color + p.getName());*/
 		for(Player player: getServer().getOnlinePlayers()) {
 		       rs = sqlite.readQuery("SELECT vanished FROM users WHERE username = '" + player.getName() + "'");
 		       boolean van = false;
@@ -458,7 +450,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 	}
 	@EventHandler
 	public void playerLogout(PlayerQuitEvent evt){
-		sqlite.modifyQuery("UPDATE users SET afk=0 WHERE username = '" + evt.getPlayer().getName() + "'");
+		sqlite.modifyQuery("UPDATE users SET afk=0, last_seen = '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "' WHERE username = '" + evt.getPlayer().getName() + "'");
 	}
 	@EventHandler
 	public void playerCommand(PlayerCommandPreprocessEvent evt) {
@@ -1392,6 +1384,32 @@ public class MitaBase extends JavaPlugin implements Listener {
 				sqlite.modifyQuery("UPDATE users SET pvp='" + pvp + "'");
 			} else if (p == null) {
 				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
+			}
+		} else if (cmd.getName().equalsIgnoreCase("seen")){
+			if(p == null || p.hasPermission("MitaBase.seen")) {
+				if(args.length != 1) {
+					return false;
+				}
+				Player pl = getServer().getPlayer(args[0]);
+				String plname = "";
+				if(pl != null) {
+					plname = pl.getName();
+				} else {
+					plname = args[0];
+				}
+				ResultSet rs = sqlite.readQuery("SELECT last_seen FROM users WHERE username = '" + plname + "'");
+				try {
+					String ls = rs.getString("last_seen");
+					if(pl != null) {
+						sender.sendMessage(pl.getDisplayName() + " is online since " + ls);
+					} else if(pl == null) {
+						sender.sendMessage(plname + " is offline and was last seen on " + ls);
+					}
+				} catch (Exception e) {
+					sender.sendMessage(ChatColor.RED + "Player" + args[0] + "not found");
+				}
 			} else {
 				noPermission(sender, cmd, args);
 			}
