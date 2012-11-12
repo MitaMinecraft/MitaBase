@@ -37,6 +37,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
@@ -453,6 +454,11 @@ public class MitaBase extends JavaPlugin implements Listener {
 	public void playerLogout(PlayerQuitEvent evt){
 		Player p = evt.getPlayer();
 		sqlite.modifyQuery("UPDATE users SET afk=0, last_seen = '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "', lastLocX = '" + p.getLocation().getBlockX() + "', lastLocY = '" + p.getLocation().getBlockY() + "', lastLocZ = '" + p.getLocation().getBlockZ() + "', lastWorld = '" + p.getLocation().getWorld().getName() + "' WHERE username = '" + p.getName() + "'");
+	}
+	@EventHandler (priority = EventPriority.MONITOR)
+	public void playerDeath(PlayerDeathEvent evt) {
+		Player p = evt.getEntity();
+		sqlite.modifyQuery("UPDATE users SET lastLocX = '" + p.getLocation().getBlockX() + "', lastLocY = '" + p.getLocation().getBlockY() + "', lastLocZ = '" + p.getLocation().getBlockZ() + "', lastWorld = '" + p.getLocation().getWorld().getName() + "' WHERE username = '" + p.getName() + "'");
 	}
 	@EventHandler
 	public void playerCommand(PlayerCommandPreprocessEvent evt) {
