@@ -4,9 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
@@ -19,13 +17,13 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.event.EventHandler;
@@ -34,6 +32,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
@@ -402,14 +401,14 @@ public class MitaBase extends JavaPlugin implements Listener {
 	@EventHandler
 	public void playerLogin(PlayerLoginEvent evt) {
 		Player p = evt.getPlayer();
+		String nick = "";
 		ResultSet rs = sqlite.readQuery("SELECT nick FROM users WHERE username = '" + p.getName() + "'");
 		try {
-			String nick = rs.getString("nick");
-			if(!nick.equals("")) {
-				p.setDisplayName(colorize(nick));
-			}	
+			nick = rs.getString("nick");	
 		} catch (Exception e) {
-			e.printStackTrace();
+		}
+		if(!nick.equals("")) {
+			p.setDisplayName(colorize(nick));
 		}
 		sqlite.modifyQuery("UPDATE users SET last_seen = '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "' WHERE username = '" + p.getName() + "'");
 	}
@@ -698,18 +697,70 @@ public class MitaBase extends JavaPlugin implements Listener {
     	}
    	}
     @EventHandler
-   public void onUse(PlayerInteractEvent evt) {
+    public void onUse(PlayerInteractEvent evt) {
     	Action a = evt.getAction();
     	Player p = evt.getPlayer();
     	ItemStack i = evt.getItem();
-    	if(!(a == Action.RIGHT_CLICK_AIR || a == Action.RIGHT_CLICK_BLOCK) || i.getType() != Material.POTION) {
-    		return;
+    	Block b = evt.getClickedBlock();
+    	if(a == Action.RIGHT_CLICK_BLOCK && (b.getType() == Material.SIGN || b.getType() == Material.SIGN_POST || b.getType() == Material.WALL_SIGN)) {
+    		if(!p.hasPermission("MitaBase.warpsigns.use")) {
+					p.sendMessage(ChatColor.RED + "You don't have the permission to use warpsigns");
+				} else {
+					if(!((Sign)b.getState()).getLine(0).equalsIgnoreCase("[Warp]")) {
+						return;
+					}
+					String wname = ((Sign)b.getState()).getLine(1);
+					ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS numWarpsWithThatName FROM warps WHERE warpname = '" + wname + "'");
+					int nwwn = 0;
+					try {
+						nwwn = rs.getInt("numWarpsWithThatName");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					if(nwwn > 0) {
+						rs = sqlite.readQuery("SELECT locX, locY, locZ, world FROM warps WHERE warpname = '" + wname + "'");
+						double x = 0;
+						double y = 0;
+						double z = 0;
+						String world = "";
+						try {
+							x = rs.getDouble("locX");
+							y = rs.getDouble("locY");
+							z = rs.getDouble("locZ");
+							world = rs.getString("world");
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						p.teleport(new Location(Bukkit.getServer().getWorld(world), x, y, z));
+					} else {
+						p.sendMessage(ChatColor.RED + "Warp " + wname + " not found");
+					}			
+				}
+    		evt.setCancelled(true);
+    	} else if((a == Action.RIGHT_CLICK_AIR || a == Action.RIGHT_CLICK_BLOCK) && i.getType() == Material.POTION) {
+    		Potion potion = Potion.fromItemStack(i);
+        	for(PotionEffect effect : potion.getEffects()) {
+        		if(effect.getType() == PotionEffectType.INVISIBILITY) {
+        			evt.setCancelled(true);
+        				p.sendMessage(ChatColor.RED + "Invisibility potions are not enabled yet. We're working on this.");
+        		}
+        	}
+        	
 	    }
-    	Potion potion = Potion.fromItemStack(i);
-    	for(PotionEffect effect : potion.getEffects()) {
-    		if(effect.getType() == PotionEffectType.INVISIBILITY) {
+    }
+    @EventHandler
+    public void signThingy(SignChangeEvent evt) {
+    	Player p = evt.getPlayer();
+    	if(evt.getLines().length > 0 && evt.getLine(0).equalsIgnoreCase("[Warp]")) {
+    		if (p.hasPermission("MitaBase.warpsigns.set") && (evt.getLines().length < 2 || evt.getLine(1).equalsIgnoreCase(""))){
+    			p.sendMessage(ChatColor.RED + "First line: [Warp]");
+    			p.sendMessage(ChatColor.RED + "Second line: warpname");
+    			evt.getBlock().breakNaturally();
     			evt.setCancelled(true);
-    				p.sendMessage(ChatColor.RED + "Invisibility potions are not enabled yet. We're working on this.");
+    		} else if (!p.hasPermission("MitaBase.warpsigns.set")){
+    			p.sendMessage(ChatColor.RED + "You don't have the permission to create warpsigns");
+    			evt.getBlock().breakNaturally();
+    			evt.setCancelled(true);
     		}
     	}
     }

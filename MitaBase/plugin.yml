@@ -215,6 +215,7 @@ permissions:
             MitaBase.unlimitedHomes: true
             MitaBase.banprotected: true
             MitaBase.sudo: true
+            MitaBase.warpsigns.set: true
     MitaBase.admin.*:
         description: Gives access to all admin-commands from MitaBase
         children:
@@ -231,7 +232,7 @@ permissions:
             MitaBase.toggleMobDamage: true
             MitaBase.banreason: true
             MitaBase.socialspy: true
-            MitaBase.nick.others: true
+            MitaBase.nick.*: true
             MitaBase.seen: true
     MitaBase.mod.*:
         description: Gives access to all mod-commands from MitaBase
@@ -262,6 +263,7 @@ permissions:
             MitaBase.warnings.issue: true
             MitaBase.coloredchat: true
             MitaBase.nick.self: true
+            MitaBase.warpsigns.set: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:
@@ -283,3 +285,4 @@ permissions:
             MitaBase.tpa.tpaccept: true
             MitaBase.tpa.tpdeny: true
             MitaBase.back: true
+            MitaBase.warpsigns.use: true
