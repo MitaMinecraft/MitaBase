@@ -46,6 +46,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -75,7 +76,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT, last_seen TEXT)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT, last_seen TEXT, lastLocX INTEGER, lastLocY INTEGER, LastLocZ INTEGER, lastWorld TEXT)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -450,7 +451,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 	}
 	@EventHandler
 	public void playerLogout(PlayerQuitEvent evt){
-		sqlite.modifyQuery("UPDATE users SET afk=0, last_seen = '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "' WHERE username = '" + evt.getPlayer().getName() + "'");
+		Player p = evt.getPlayer();
+		sqlite.modifyQuery("UPDATE users SET afk=0, last_seen = '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "', lastLocX = '" + p.getLocation().getBlockX() + "', lastLocY = '" + p.getLocation().getBlockY() + "', lastLocZ = '" + p.getLocation().getBlockZ() + "', lastWorld = '" + p.getLocation().getWorld().getName() + "' WHERE username = '" + p.getName() + "'");
 	}
 	@EventHandler
 	public void playerCommand(PlayerCommandPreprocessEvent evt) {
@@ -475,6 +477,12 @@ public class MitaBase extends JavaPlugin implements Listener {
 		if(cmd != null && !commands.contains(cmd) && preventPlayerFromBreakingOut(evt.getPlayer())) {
 			evt.setCancelled(true);
 		}
+	}
+	@EventHandler
+	public void playerTP(PlayerTeleportEvent evt) {
+		Player p = evt.getPlayer();
+		Location l = evt.getFrom();
+		sqlite.modifyQuery("UPDATE users SET lastLocX = '" + l.getBlockX() + "', lastLocY = '" + l.getBlockY() + "', lastLocZ = '" + l.getBlockZ() + "', lastWorld = '" + l.getWorld().getName() + "' WHERE username = '" + p.getName() + "'");
 	}
 	@EventHandler
 	public void playerChat(AsyncPlayerChatEvent evt) {
@@ -730,6 +738,20 @@ public class MitaBase extends JavaPlugin implements Listener {
 				if(afk) Bukkit.getServer().broadcastMessage(ChatColor.DARK_AQUA +  p.getDisplayName() + " is no longer afk");
 			} else {
 				playerOnly(sender);
+			}
+		}else if(cmd.getName().equalsIgnoreCase("back")) {
+			if(p != null && p.hasPermission("MitaBase.back")) {
+				ResultSet rs = sqlite.readQuery("SELECT lastLocX, lastLocY, lastLocZ, lastWorld FROM users WHERE username = '" + p.getName() +"'");
+				try {
+					Location l = new Location(Bukkit.getWorld(rs.getString("lastWorld")), rs.getInt("lastLocX"), rs.getInt("lastLocY"), rs.getInt("lastLocZ"));
+					p.teleport(l);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else if (p == null) {
+				playerOnly(sender);
+			} else {
+				noPermission(sender, cmd, args);
 			}
 		}else if(cmd.getName().equalsIgnoreCase("ban")) {
 			String all = "";

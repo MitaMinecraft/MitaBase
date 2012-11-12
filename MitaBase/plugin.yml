@@ -8,6 +8,10 @@ commands:
     description: Marks you as afk
     usage: /afk
     permission: MitaBase.afk
+  back:
+    description: Teleports you back to your last location
+    usage: /back
+    permission: MitaBase.back
   ban:
     description: Bans a player
     usage: /ban <player> [time in seconds] [reason]
@@ -278,3 +282,4 @@ permissions:
             MitaBase.tpa.tpa: true
             MitaBase.tpa.tpaccept: true
             MitaBase.tpa.tpdeny: true
+            MitaBase.back: true
