@@ -52,6 +52,7 @@ import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.Potion;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import net.milkbowl.vault.chat.Chat;
@@ -685,35 +686,33 @@ public class MitaBase extends JavaPlugin implements Listener {
 		}
 	}
     @EventHandler
-    public void onSplash(PotionSplashEvent event) {
-    	ThrownPotion potion = event.getEntity();
+    public void onSplash(PotionSplashEvent evt) {
+    	ThrownPotion potion = evt.getPotion();
     	for(PotionEffect effect : potion.getEffects()) {
     		if(effect.getType() == PotionEffectType.INVISIBILITY) {
-    			Collection<LivingEntity> les = event.getAffectedEntities(); // To prevent the concurrent exception
-    			final ArrayList<String> unaffected = new ArrayList<String>();
-    			for(LivingEntity le : les) {
-    				if(le instanceof Player) {
-    					if(((Player)le).hasPermission("no.invis.perm")) {
-    						unaffected.add(((Player)le).getName());
-    					}
-    				}
-    			}
-    			if(unaffected.size() > 0) {
-    				Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-    					@Override
-    					public void run() {
-    						for(String name : unaffected) {
-    							Player p = Bukkit.getPlayer(name);
-    							if(p != null) {
-    								p.removePotionEffect(PotionEffectType.INVISIBILITY);
-    							}
-    						}
-    					}
-    				}, 1L);
+    			evt.setCancelled(true);
+    			if (potion.getShooter() instanceof Player) {
+    				((Player) potion.getShooter()).sendMessage(ChatColor.RED + "Invisibility potions are not enabled yet. We're working on this.");
     			}
     		}
     	}
+   	}
+    @EventHandler
+   public void onUse(PlayerInteractEvent evt) {
+    	Action a = evt.getAction();
+    	Player p = evt.getPlayer();
+    	ItemStack i = evt.getItem();
+    	if(!(a == Action.RIGHT_CLICK_AIR || a == Action.RIGHT_CLICK_BLOCK) || i.getType() != Material.POTION) {
+    		return;
+	    }
+    	Potion potion = Potion.fromItemStack(i);
+    	for(PotionEffect effect : potion.getEffects()) {
+    		if(effect.getType() == PotionEffectType.INVISIBILITY) {
+    			evt.setCancelled(true);
+    				p.sendMessage(ChatColor.RED + "Invisibility potions are not enabled yet. We're working on this.");
+    		}
     	}
+    }
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(!cmdlogger) {
 			String argString = " ";
