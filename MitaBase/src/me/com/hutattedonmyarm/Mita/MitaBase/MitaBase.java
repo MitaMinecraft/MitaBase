@@ -1631,8 +1631,8 @@ public class MitaBase extends JavaPlugin implements Listener {
 			if(args.length == 0) {
 				if(p != null && p.hasPermission("MitaBase.time")) {
 					p.sendMessage(ChatColor.BLUE + "Time in world " + p.getWorld().getName() + " is " + p.getWorld().getTime() + " ticks");
-					MobEffect m = new MobEffect(14, 200);
-					((CraftPlayer)p).getHandle().netServerHandler.sendPacket(new Packet41MobEffect(getServer().getPlayer("mx44").getEntityId(), m));
+					//MobEffect m = new MobEffect(14, 200);
+					//((CraftPlayer)p).getHandle().netServerHandler.sendPacket(new Packet41MobEffect(getServer().getPlayer("mx44").getEntityId(), m));
 				} else if (p == null) {
 					playerOnly(sender);
 					return true;
