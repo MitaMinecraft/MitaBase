@@ -388,22 +388,6 @@ public class MitaBase extends JavaPlugin implements Listener {
     	if(s == null) return null;
     	return s.replaceAll("&([0-9a-f])", "\u00A7$1");
     }
-	/**
-	 * Get the ID of a player in the database. Returns -1 if an error occured
-	 * @param name
-	 * @return
-	 */
-    public static int getPlayerID(String name) {
-		if(name == null) {
-			return -1;
-		}
-		ResultSet rs = sqlite.readQuery("SELECT userid FROM users WHERE username = '" + name + "'");
-		try {
-			return rs.getInt("userid");
-		} catch (Exception e) {
-			return -1;
-		}
-	}
     public void onEnable(){
 		getServer().getPluginManager().registerEvents(this, this);
 		sqlite.open();
