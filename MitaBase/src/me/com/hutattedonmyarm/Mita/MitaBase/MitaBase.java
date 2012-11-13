@@ -60,10 +60,10 @@ import net.minecraft.server.MobEffect;
 import net.minecraft.server.Packet41MobEffect;
 
 public class MitaBase extends JavaPlugin implements Listener {
-	private Logger logger = Bukkit.getServer().getLogger();
+	private static Logger logger = Bukkit.getServer().getLogger();
 	
 	private String pluginPrefix = "[MitaBase] ";
-	private String databaseName = "MitaBaseDB.db";
+	private static String databaseName = "MitaBaseDB.db";
 	private String console_last_messaged = "";
 	
 	private ConsoleCommandSender console;
@@ -72,12 +72,12 @@ public class MitaBase extends JavaPlugin implements Listener {
 	private boolean cmdlogger = true;
 	
 	private Permission permission;
-	private SQLite sqlite = new SQLite(logger, "[MitaBase]", databaseName, "plugins/MitaBase/");
+	private static SQLite sqlite = new SQLite(logger, "[MitaBase]", databaseName, "plugins/MitaBase/");
 	private Chat chat = null;
 
 	private void setupDatabase() {
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT, last_seen TEXT, lastLocX INTEGER, lastLocY INTEGER, LastLocZ INTEGER, lastWorld TEXT)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT, last_seen TEXT, lastLocX INTEGER, lastLocY INTEGER, LastLocZ INTEGER, lastWorld TEXT, townid INTEGER)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -379,7 +379,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			p.sendMessage(ChatColor.RED + "You're not allowed to do that while in jail");
 		}
 		return jailed;
-		//We can't cancel the event here since w don't know if it's cancellable or not
+		//We can't cancel the event here since we don't know if it's cancellable or not
 	}
 	private void playerOnly (CommandSender sender) {
 		sender.sendMessage(ChatColor.RED + "Only players can use this command");
@@ -388,7 +388,39 @@ public class MitaBase extends JavaPlugin implements Listener {
     	if(s == null) return null;
     	return s.replaceAll("&([0-9a-f])", "\u00A7$1");
     }
-	public void onEnable(){
+	/**
+	 * Get the ID of a player in the database. Returns -1 if an error occured
+	 * @param name
+	 * @return
+	 */
+    public static int getPlayerID(String name) {
+		if(name == null) {
+			return -1;
+		}
+		ResultSet rs = sqlite.readQuery("SELECT userid FROM users WHERE username = '" + name + "'");
+		try {
+			return rs.getInt("userid");
+		} catch (Exception e) {
+			return -1;
+		}
+	}
+    /**
+     * Get the ID of the town the player belongs to. Returns 0 if none and -1 if an error occurred
+     * @param name
+     * @return
+     */
+    public static int getTownOfPlayer(String name) {
+		if(name == null) {
+			return -1;
+		}
+		ResultSet rs = sqlite.readQuery("SELECT townid FROM users WHERE username = '" + name + "'");
+		try {
+			return rs.getInt("townid");
+		} catch (Exception e) {
+			return -1;
+		}
+	}
+    public void onEnable(){
 		getServer().getPluginManager().registerEvents(this, this);
 		sqlite.open();
 		console = Bukkit.getServer().getConsoleSender();
@@ -419,7 +451,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
-				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy, nick) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0, '')");
+				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy, townid nick) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0, 0, '')");
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
 				try {
