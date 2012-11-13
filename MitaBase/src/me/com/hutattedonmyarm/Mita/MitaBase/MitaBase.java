@@ -77,7 +77,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 
 	private void setupDatabase() {
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT, last_seen TEXT, lastLocX INTEGER, lastLocY INTEGER, LastLocZ INTEGER, lastWorld TEXT, townid INTEGER)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT, last_seen TEXT, lastLocX INTEGER, lastLocY INTEGER, LastLocZ INTEGER, lastWorld TEXT)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -404,22 +404,6 @@ public class MitaBase extends JavaPlugin implements Listener {
 			return -1;
 		}
 	}
-    /**
-     * Get the ID of the town the player belongs to. Returns 0 if none and -1 if an error occurred
-     * @param name
-     * @return
-     */
-    public static int getTownOfPlayer(String name) {
-		if(name == null) {
-			return -1;
-		}
-		ResultSet rs = sqlite.readQuery("SELECT townid FROM users WHERE username = '" + name + "'");
-		try {
-			return rs.getInt("townid");
-		} catch (Exception e) {
-			return -1;
-		}
-	}
     public void onEnable(){
 		getServer().getPluginManager().registerEvents(this, this);
 		sqlite.open();
@@ -451,7 +435,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
-				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy, townid nick) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0, 0, '')");
+				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy, townid) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0, '')");
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
 				try {
