@@ -55,13 +55,13 @@ import org.bukkit.potion.Potion;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import net.milkbowl.vault.chat.Chat;
+import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.*;
 import net.minecraft.server.MobEffect;
 import net.minecraft.server.Packet41MobEffect;
 
 public class MitaBase extends JavaPlugin implements Listener {
 	private Logger logger = Bukkit.getServer().getLogger();
-	
 	private String pluginPrefix = "[MitaBase] ";
 	private String databaseName = "MitaBaseDB.db";
 	private String console_last_messaged = "";
@@ -78,7 +78,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 	private void setupDatabase() {
 		console.sendMessage("DB...");
 		if (!sqlite.tableExists("users")) {
-			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT, last_seen TEXT, lastLocX INTEGER, lastLocY INTEGER, LastLocZ INTEGER, lastWorld TEXT)";
+			String query = "CREATE TABLE users (userid INTEGER PRIMARY KEY, username TEXT, numofhomes INTEGER, afk INTEGER, muted INTEGER, jailed INTEGER, jaileduntil TEXT, pvp INTEGER, last_messaged INTEGER, vanished INTEGER, socialspy INTEGER, nick TEXT, last_seen TEXT, lastLocX INTEGER, lastLocY INTEGER, LastLocZ INTEGER, lastWorld TEXT, registered TEXT)";
 			sqlite.modifyQuery(query);
 		}
 		if (!sqlite.tableExists("worlds")) {
@@ -420,7 +420,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
 				Bukkit.getServer().dispatchCommand(p, "spawn");
-				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy, nick) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0, '')");
+				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy, nick, registered) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0, '', '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "')");
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
 				try {
