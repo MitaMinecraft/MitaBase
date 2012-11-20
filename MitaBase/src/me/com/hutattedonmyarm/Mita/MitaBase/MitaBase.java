@@ -159,13 +159,17 @@ public class MitaBase extends JavaPlugin implements Listener {
 	    }
 	    console.sendMessage(pluginPrefix + ChatColor.GREEN + "Found " + worlds.size() + " worlds");
 	    
-	    //Set the spawnpoint in the config to the spawnof the mainworld if it's not set
+	    //Set the spawnpoint in the config to the spawn of the mainworld if it's not set
 	    if(getConfig().getString("spawn.world") == null) {
 	    	getConfig().options().copyDefaults(true);
 	    	getConfig().addDefault("spawn.world", Bukkit.getServer().getWorlds().get(0).getName());
 	    	getConfig().addDefault("spawn.x", Bukkit.getServer().getWorlds().get(0).getSpawnLocation().getX());
 	    	getConfig().addDefault("spawn.y", Bukkit.getServer().getWorlds().get(0).getSpawnLocation().getY());
 	    	getConfig().addDefault("spawn.z", Bukkit.getServer().getWorlds().get(0).getSpawnLocation().getZ());
+	    	getConfig().addDefault("newbiespawn.world", Bukkit.getServer().getWorlds().get(0).getName());
+	    	getConfig().addDefault("newbiespawn.x", Bukkit.getServer().getWorlds().get(0).getSpawnLocation().getX());
+	    	getConfig().addDefault("newbiespawn.y", Bukkit.getServer().getWorlds().get(0).getSpawnLocation().getY());
+	    	getConfig().addDefault("newbiespawn.z", Bukkit.getServer().getWorlds().get(0).getSpawnLocation().getZ());
 	    	saveConfig();
 	    }
 	    saveDefaultConfig();
@@ -419,7 +423,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 		ResultSet rs = sqlite.readQuery("SELECT userid FROM users WHERE username = '" + p.getName() + "'");
 		try {
 			if(rs != null && !rs.next()) { //User doesn't exist in DB, so they joined the first time, We'll add them
-				Bukkit.getServer().dispatchCommand(p, "spawn");
+				p.teleport(new Location(Bukkit.getServer().getWorld(getConfig().getString("newbiespawn.world")), getConfig().getDouble("newbiespawn.x"), getConfig().getDouble("newbiespawn.y"), getConfig().getDouble("newbiespawn.z")));
 				sqlite.modifyQuery("INSERT INTO users (username, numofhomes, afk, muted, pvp, vanished, jailed, socialspy, nick, registered) VALUES ('" + p.getName() + "', 0, 0, 0, 0, 0, 0, 0, '', '" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss ZZ").format(new Date()) + "')");
 				ChatColor mc = ChatColor.GREEN;
 				ChatColor uc = ChatColor.YELLOW;
@@ -704,39 +708,45 @@ public class MitaBase extends JavaPlugin implements Listener {
     	ItemStack i = evt.getItem();
     	Block b = evt.getClickedBlock();
     	if(a == Action.RIGHT_CLICK_BLOCK && (b.getType() == Material.SIGN || b.getType() == Material.SIGN_POST || b.getType() == Material.WALL_SIGN)) {
-					if(!((Sign)b.getState()).getLine(0).equalsIgnoreCase("[Warp]")) {
+					if(!(((Sign)b.getState()).getLine(0).equalsIgnoreCase("[Warp]") || ((Sign)b.getState()).getLine(0).equalsIgnoreCase("[RulesQuiz]"))) {
 						return;
 					}
-					String wname = ((Sign)b.getState()).getLine(1);
-					if(!p.hasPermission("MitaBase.warpsigns.use."+wname)) {
-						p.sendMessage(ChatColor.RED + "You don't have the permission to use this warpsign");
-						return;
-					}
-					ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS numWarpsWithThatName FROM warps WHERE warpname = '" + wname + "'");
-					int nwwn = 0;
-					try {
-						nwwn = rs.getInt("numWarpsWithThatName");
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-					if(nwwn > 0) {
-						rs = sqlite.readQuery("SELECT locX, locY, locZ, world FROM warps WHERE warpname = '" + wname + "'");
-						double x = 0;
-						double y = 0;
-						double z = 0;
-						String world = "";
+					if (((Sign)b.getState()).getLine(0).equalsIgnoreCase("[Warp]")) {
+						String wname = ((Sign)b.getState()).getLine(1);
+						if(!p.hasPermission("MitaBase.warpsigns.use."+wname)) {
+							p.sendMessage(ChatColor.RED + "You don't have the permission to use this warpsign");
+							return;
+						}
+						ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS numWarpsWithThatName FROM warps WHERE warpname = '" + wname + "'");
+						int nwwn = 0;
 						try {
-							x = rs.getDouble("locX");
-							y = rs.getDouble("locY");
-							z = rs.getDouble("locZ");
-							world = rs.getString("world");
+							nwwn = rs.getInt("numWarpsWithThatName");
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
-						p.teleport(new Location(Bukkit.getServer().getWorld(world), x, y, z));
+						if(nwwn > 0) {
+							rs = sqlite.readQuery("SELECT locX, locY, locZ, world FROM warps WHERE warpname = '" + wname + "'");
+							double x = 0;
+							double y = 0;
+							double z = 0;
+							String world = "";
+							try {
+								x = rs.getDouble("locX");
+								y = rs.getDouble("locY");
+								z = rs.getDouble("locZ");
+								world = rs.getString("world");
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+							p.teleport(new Location(Bukkit.getServer().getWorld(world), x, y, z));
+						} else {
+							p.sendMessage(ChatColor.RED + "Warp " + wname + " not found");
+						}	
 					} else {
-						p.sendMessage(ChatColor.RED + "Warp " + wname + " not found");
-					}			
+						permission.playerAdd(p, "MitaBase.user.*");
+						Bukkit.dispatchCommand(p, "spawn");
+					}
+							
     		evt.setCancelled(true);
     	} else if((a == Action.RIGHT_CLICK_AIR || a == Action.RIGHT_CLICK_BLOCK) && i.getType() == Material.POTION) {
     		Potion potion = Potion.fromItemStack(i);
@@ -760,6 +770,12 @@ public class MitaBase extends JavaPlugin implements Listener {
     			evt.setCancelled(true);
     		} else if (!p.hasPermission("MitaBase.warpsigns.set"+evt.getLine(1))){
     			p.sendMessage(ChatColor.RED + "You don't have the permission to create warpsigns");
+    			evt.getBlock().breakNaturally();
+    			evt.setCancelled(true);
+    		}
+    	} else if (evt.getLines().length > 0 && evt.getLine(0).equalsIgnoreCase("[RulesQuiz]")) {
+    		if (!p.hasPermission("MitaBase.quizsign")){
+    			p.sendMessage(ChatColor.RED + "You don't have the permission to create the quizsign");
     			evt.getBlock().breakNaturally();
     			evt.setCancelled(true);
     		}

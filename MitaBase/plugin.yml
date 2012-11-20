@@ -216,6 +216,7 @@ permissions:
             MitaBase.banprotected: true
             MitaBase.sudo: true
             MitaBase.warpsigns.set: true
+            MitaBase.quizsign: true
     MitaBase.admin.*:
         description: Gives access to all admin-commands from MitaBase
         children:

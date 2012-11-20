@@ -1,10 +1,17 @@
-#Spawnpoint for new players and the /spawn command
+#Spawnpoint for the /spawn command
 spawn:
   x: 
   y:
   z:
   world:
- 
+
+#Spawnpoint for new players
+newbiespawn:
+  x:
+  y:
+  z:
+  world:
+  
 #Default value, can be changed per user
 max_num_of_homes: 3
 
