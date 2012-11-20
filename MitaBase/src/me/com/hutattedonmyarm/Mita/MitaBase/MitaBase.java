@@ -142,7 +142,6 @@ public class MitaBase extends JavaPlugin implements Listener {
 	    setupChat();
 	    cmdlogger = getConfig().getBoolean("command_logger");
 	    cm = new SimpleCommandMap(getServer());
-	    //cm.registerAll(fallbackPrefix, commands);
 	    console.sendMessage(pluginPrefix + "Scanning for worlds...");
 	    
 	    //Getting all worlds and add them to the DB if they don't exist 
@@ -157,8 +156,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 				e.printStackTrace();
 			}
 	    }
-	    console.sendMessage(pluginPrefix + ChatColor.GREEN + "Found " + worlds.size() + " worlds");
-	    
+	    console.sendMessage(pluginPrefix + ChatColor.GREEN + "Found " + worlds.size() + " worlds"); 
 	    //Set the spawnpoint in the config to the spawn of the mainworld if it's not set
 	    if(getConfig().getString("spawn.world") == null) {
 	    	getConfig().options().copyDefaults(true);
@@ -743,10 +741,10 @@ public class MitaBase extends JavaPlugin implements Listener {
 							p.sendMessage(ChatColor.RED + "Warp " + wname + " not found");
 						}	
 					} else {
-						permission.playerAdd(p, "MitaBase.user.*");
+						permission.playerAddGroup(p, "Player");
+						permission.playerRemoveGroup(p, "Newbie");
 						Bukkit.dispatchCommand(p, "spawn");
-					}
-							
+					}				
     		evt.setCancelled(true);
     	} else if((a == Action.RIGHT_CLICK_AIR || a == Action.RIGHT_CLICK_BLOCK) && i.getType() == Material.POTION) {
     		Potion potion = Potion.fromItemStack(i);
@@ -1364,7 +1362,15 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else {
 				noPermission(sender, cmd, args);
 			}	
-		}  else if(cmd.getName().equalsIgnoreCase("reply")) {
+		} else if(cmd.getName().equalsIgnoreCase("newbspawn")) {
+			if(p == null) {
+				playerOnly(sender);
+			} else if (!p.hasPermission("MitaBase.newbspawn")){
+				noPermission(sender, cmd, args);
+			}else {
+				p.teleport(new Location(Bukkit.getServer().getWorld(getConfig().getString("newbiespawn.world")), getConfig().getDouble("newbiespawn.x"), getConfig().getDouble("newbiespawn.y"), getConfig().getDouble("newbiespawn.z")));
+			}
+		}   else if(cmd.getName().equalsIgnoreCase("reply")) {
 			if(p == null || p.hasPermission("MitaBase.msg")) {
 				if(args.length < 1) return false;
 				String msg = "";

@@ -97,6 +97,10 @@ commands:
     description: Mutes a player
     usage: /mute <player>
     permission: MitaBase.mute
+  newbspawn:
+    description: Teleports a player to the newbie's spawn
+    usage: /newbspawn
+    permission:  MitaBase.newbspawn
   nick:
     description: Changes your/another player's nick
     usage: /nick [player] <nick>
