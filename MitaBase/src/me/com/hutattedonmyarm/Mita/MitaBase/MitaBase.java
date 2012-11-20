@@ -1924,7 +1924,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 					try {
 						rs.next();
 						while(!rs.isAfterLast()) {
-							warplist += rs.getString("warpname") + ", ";
+							if(p == null || p.hasPermission("MitaBase.warp."+rs.getString("warpname"))) {warplist += rs.getString("warpname") + ", ";} 
 							rs.next();
 						}
 						if(warplist.length() > 2) warplist = warplist.substring(0, warplist.length()-2);
