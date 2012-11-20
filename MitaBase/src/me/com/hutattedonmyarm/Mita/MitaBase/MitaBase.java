@@ -704,13 +704,14 @@ public class MitaBase extends JavaPlugin implements Listener {
     	ItemStack i = evt.getItem();
     	Block b = evt.getClickedBlock();
     	if(a == Action.RIGHT_CLICK_BLOCK && (b.getType() == Material.SIGN || b.getType() == Material.SIGN_POST || b.getType() == Material.WALL_SIGN)) {
-    		if(!p.hasPermission("MitaBase.warpsigns.use")) {
-					p.sendMessage(ChatColor.RED + "You don't have the permission to use warpsigns");
-				} else {
 					if(!((Sign)b.getState()).getLine(0).equalsIgnoreCase("[Warp]")) {
 						return;
 					}
 					String wname = ((Sign)b.getState()).getLine(1);
+					if(!p.hasPermission("MitaBase.warpsigns.use."+wname)) {
+						p.sendMessage(ChatColor.RED + "You don't have the permission to use this warpsign");
+						return;
+					}
 					ResultSet rs = sqlite.readQuery("SELECT COUNT(*) AS numWarpsWithThatName FROM warps WHERE warpname = '" + wname + "'");
 					int nwwn = 0;
 					try {
@@ -736,7 +737,6 @@ public class MitaBase extends JavaPlugin implements Listener {
 					} else {
 						p.sendMessage(ChatColor.RED + "Warp " + wname + " not found");
 					}			
-				}
     		evt.setCancelled(true);
     	} else if((a == Action.RIGHT_CLICK_AIR || a == Action.RIGHT_CLICK_BLOCK) && i.getType() == Material.POTION) {
     		Potion potion = Potion.fromItemStack(i);
@@ -753,12 +753,12 @@ public class MitaBase extends JavaPlugin implements Listener {
     public void signThingy(SignChangeEvent evt) {
     	Player p = evt.getPlayer();
     	if(evt.getLines().length > 0 && evt.getLine(0).equalsIgnoreCase("[Warp]")) {
-    		if (p.hasPermission("MitaBase.warpsigns.set") && (evt.getLines().length < 2 || evt.getLine(1).equalsIgnoreCase(""))){
+    		if (p.hasPermission("MitaBase.warpsigns.set."+evt.getLine(1)) && (evt.getLines().length < 2 || evt.getLine(1).equalsIgnoreCase(""))){
     			p.sendMessage(ChatColor.RED + "First line: [Warp]");
     			p.sendMessage(ChatColor.RED + "Second line: warpname");
     			evt.getBlock().breakNaturally();
     			evt.setCancelled(true);
-    		} else if (!p.hasPermission("MitaBase.warpsigns.set")){
+    		} else if (!p.hasPermission("MitaBase.warpsigns.set"+evt.getLine(1))){
     			p.sendMessage(ChatColor.RED + "You don't have the permission to create warpsigns");
     			evt.getBlock().breakNaturally();
     			evt.setCancelled(true);
@@ -1939,7 +1939,7 @@ public class MitaBase extends JavaPlugin implements Listener {
 			} else {
 				if(p == null) {
 					playerOnly(sender);
-				} else if(!p.hasPermission("MitaBase.warp."+args[0])) {
+				} else if(!(p.hasPermission("MitaBase.warp."+args[0]) || p.hasPermission("MitaBase.warpsigns.use."+args[0]))) {
 					noPermission(sender, cmd, args);
 				} else {
 					String wname = args[0];

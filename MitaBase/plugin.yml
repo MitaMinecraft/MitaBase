@@ -198,7 +198,7 @@ commands:
   warp:
     description: Warps a player to warp [name] or lists all warps if no name is provided
     usage: /warp [name]
-    permission: MitaBase.warp
+    permission: MitaBase.listwarp
   weather:
     description: Sets the weather
     usage: /weather [world] <sun|rain|storm>
@@ -263,7 +263,7 @@ permissions:
             MitaBase.warnings.issue: true
             MitaBase.coloredchat: true
             MitaBase.nick.self: true
-            MitaBase.warpsigns.set: true
+            MitaBase.warpsigns.set.*: true
     MitaBase.user.*:
         description: Gives access to all user-commands from MitaBase
         children:
@@ -285,4 +285,4 @@ permissions:
             MitaBase.tpa.tpaccept: true
             MitaBase.tpa.tpdeny: true
             MitaBase.back: true
-            MitaBase.warpsigns.use: true
+            MitaBase.warpsigns.use.*: true
